@@ -1,3 +1,5 @@
+#a very naive circular buffer to store wave time series
+
 import numpy as np
 
 
@@ -17,11 +19,9 @@ class timeCirBuffer:
 
     def to_array(self) -> np.array:
         head = (self.queue_tail + 1) % self.max_length
-        return np.roll(self.rec_queue, -head) # this will force a copy
-
+        return np.roll(self.rec_queue, -head) 
     def enqueue(self, new_data: np.float64) -> None:
-        # move tail pointer forward then insert at the tail of the queue
-        # to enforce max length of recording
+        
         self.queue_tail = (self.queue_tail + 1) % self.max_length        
         self.rec_queue[self.queue_tail] = new_data
 
@@ -34,7 +34,7 @@ class timeCirBuffer:
         self.rec_queue[loc] = new_value
 
     def item_at(self, index: int) -> np.float64:
-        # the item we want will be at head + index
+        
         loc = (self.queue_tail + 1 + index) % self.max_length
         return self.rec_queue[loc]
 
@@ -43,4 +43,4 @@ class timeCirBuffer:
 
     def __str__(self):
         return "tail: " + str(self.queue_tail) + "\narray: " + str(self.rec_queue)
-        # return str(self.to_array())
+        
