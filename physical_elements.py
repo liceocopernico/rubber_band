@@ -48,10 +48,11 @@ class rubber_band:
         self.N=N
         self.bead_mass=mass/N
         k_total=cross_section*y_mod/length
-        self.k_spring=k_total/N
+        self.k_spring=N*k_total
         self.beads=[]
         self.forces=[]
-        self.mid_position=[]    
+        self.mid_position=[] 
+        self.g=float(self.config['environment']['g'])   
         self.w_size=int(self.config['fft']['window_size'])
         self.v_fraction=float(self.config['drawing']['vertical_fraction'])
         self.time_series=timeCirBuffer(np.arange(self.w_size)*0.0,self.w_size)
@@ -179,7 +180,9 @@ class rubber_band:
             following=self.right
         else:
             following=self.beads[i+1].position
-         
+        
+        gravity_versor=pygame.Vector2(0,-1)
+        
         left_spring=self.beads[i].position-preceding
         left_length=left_spring.length()
         left_versor=left_spring/left_length
@@ -189,7 +192,7 @@ class rubber_band:
         left_force=-self.springs[i].k*abs(left_length-self.springs[i].rest_length)*left_versor
         right_force=-self.springs[i+1].k*abs(right_length-self.springs[i+1].rest_length)*right_versor
         
-        total_force=left_force+right_force-self.damping*self.beads[i].velocity
+        total_force=left_force+right_force-self.damping*self.beads[i].velocity+self.g*gravity_versor*self.beads[i].mass
         
         return [total_force,left_force,right_force]
 

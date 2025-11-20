@@ -32,7 +32,7 @@ pygame.font.init()
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
 
 
-str_spring=rubber_band(0.5,0.6,int(config['rubber_band']['beads_number']),0.05,450.0)
+str_spring=rubber_band(0.5,0.01,int(config['rubber_band']['beads_number']),0.005,7350.0)
 
 anchor=None
 
@@ -54,9 +54,9 @@ show_time_domain=False
 max_freq=1.0
 
 while running:
-    dt = clock.tick(fps)*0.001
+    dt = clock.tick(fps)*0.000001
     time+=dt
-    frames+=1
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -80,6 +80,7 @@ while running:
                 print(event.key)
                 match event.key:
                     case pygame.K_s:
+                        frames=0
                         evolution=not evolution
                     case pygame.K_f:
                         forces=not forces
@@ -119,15 +120,18 @@ while running:
     
     sim_font.render_to(screen, (0, 0), f"dt {dt} time {round(time,4)} speed {round(str_spring.get_wave_speed(),4)}", (0, 0, 0))
     if evolution:
-        
+        frames+=1
         str_spring.compute_forces_accel()
-        str_spring.compute_velocity(dt)
-        str_spring.compute_position(dt)
+        if frames==1:
+            str_spring.compute_velocity(0.5*dt)
+        else:
+            str_spring.compute_velocity(dt)
+            str_spring.compute_position(dt)
+        
         if show_time_domain:
             if frames%100==0:
                 fig.clear()
                 raw_data=str_spring.draw_time_domain(fig,dt)
-                
                 surf = pygame.image.fromstring(raw_data, graph_size, config['graphs']['rendering_mode'])
                 
             screen.blit(surf, (-0.9*int(config['graphs']['resolution']),screen_y-graph_size[1]))
@@ -151,7 +155,7 @@ while running:
     
     
     
-    #dt = clock.tick(240) 
+    
     pygame.display.flip()
 
     
