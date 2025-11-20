@@ -226,6 +226,22 @@ class rubber_band:
         self.beads[bead_index].position=system_position
         
     
+    def draw_connected_beads(self,screen):
+        screen_size=self._get_simulation_size(screen)        
+        for i in range(self.N):
+            if i==0:
+                pass
+                start=self._translate_pixel(self.left,screen_size,self.length,self.max_disp) 
+                end=self._translate_pixel(self.beads[0].position,screen_size,self.length,self.max_disp) 
+            elif i==self.N-1:
+                start=self._translate_pixel(self.beads[i-1].position,screen_size,self.length,self.max_disp)
+                end=self._translate_pixel(self.right,screen_size,self.length,self.max_disp)
+            else:
+               start=self._translate_pixel(self.beads[i-1].position,screen_size,self.length,self.max_disp)
+               end=self._translate_pixel(self.beads[i].position,screen_size,self.length,self.max_disp) 
+               
+            pygame.draw.line(screen,'red',start,end)
+    
     def draw_beads(self,screen):
         
         screen_size=self._get_simulation_size(screen)

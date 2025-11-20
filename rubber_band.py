@@ -40,6 +40,10 @@ armonic=1
 time=0
 frames=0
 raw_data=str_spring.draw_fft(fig,0.01,1.0)
+if config['graphs']['beads_draw_mode']=="connected":
+    draw_connected=True
+else:
+    draw_connected=False
 
     
 surf = pygame.image.frombytes(raw_data,graph_size, config['graphs']['rendering_mode'])
@@ -67,8 +71,7 @@ while running:
           
             if anchor!=None:
                 str_spring.move_bead(anchor,event.pos,screen)
-                
-              
+            
         if event.type== pygame.KEYUP:
                 print(event.key)
                 match event.key:
@@ -103,6 +106,8 @@ while running:
                         str_spring.set_n_m_armonic(3,7)
                     case pygame.K_t:
                         show_time_domain= not show_time_domain
+                    case pygame.K_e:
+                        draw_connected= not draw_connected
                 
     screen.fill("white")
     
@@ -136,8 +141,12 @@ while running:
     
     if forces and evolution:
         str_spring.draw_forces(screen)
+    if draw_connected:
+        str_spring.draw_connected_beads(screen)
+    else:
+        str_spring.draw_beads(screen)
     
-    str_spring.draw_beads(screen)
+    
     
     dt = clock.tick(240) 
     pygame.display.flip()
