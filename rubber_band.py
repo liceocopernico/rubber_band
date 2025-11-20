@@ -30,7 +30,7 @@ pygame.font.init()
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
 
 
-str_spring=rubber_band(1.0,0.1,int(config['rubber_band']['beads_number']),0.05,450.0)
+str_spring=rubber_band(0.5,0.6,int(config['rubber_band']['beads_number']),0.05,450.0)
 
 anchor=None
 
@@ -40,8 +40,11 @@ armonic=1
 time=0
 frames=0
 raw_data=str_spring.draw_fft(fig,0.01,1.0)
-surf = pygame.image.fromstring(raw_data, graph_size, "RGB")
+
+    
+surf = pygame.image.frombytes(raw_data,graph_size, config['graphs']['rendering_mode'])
 show_spectrum=False
+show_time_domain=False
 max_freq=1.0
 
 while running:
@@ -98,6 +101,8 @@ while running:
                         str_spring.set_n_armonic(armonic,0.25)
                     case pygame.K_o:
                         str_spring.set_n_m_armonic(3,7)
+                    case pygame.K_t:
+                        show_time_domain= not show_time_domain
                 
     screen.fill("white")
     
@@ -110,17 +115,26 @@ while running:
         str_spring.compute_forces_accel()
         str_spring.compute_velocity(dt)
         str_spring.compute_position(dt)
+        if show_time_domain:
+            if frames%100==0:
+                fig.clear()
+                raw_data=str_spring.draw_time_domain(fig,dt)
+                
+                surf = pygame.image.fromstring(raw_data, graph_size, config['graphs']['rendering_mode'])
+                
+            screen.blit(surf, (-int(config['graphs']['resolution']),screen_y-graph_size[1]))
+        
         if show_spectrum:
             if frames%100==0:
                 fig.clear()
                 raw_data=str_spring.draw_fft(fig,dt,max_freq)
                 
-                surf = pygame.image.fromstring(raw_data, graph_size, "RGB")
+                surf = pygame.image.fromstring(raw_data, graph_size, config['graphs']['rendering_mode'])
                 
             screen.blit(surf, (-int(config['graphs']['resolution']),screen_y-graph_size[1]))
  
     
-    if forces:
+    if forces and evolution:
         str_spring.draw_forces(screen)
     
     str_spring.draw_beads(screen)

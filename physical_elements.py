@@ -54,7 +54,7 @@ class rubber_band:
         self.mid_position=[]    
         self.w_size=int(self.config['fft']['window_size'])
         self.v_fraction=float(self.config['drawing']['vertical_fraction'])
-        self.time_series=timeCirBuffer(np.arange(0,1,1/self.w_size),self.w_size)
+        self.time_series=timeCirBuffer(np.arange(self.w_size)*0.0,self.w_size)
         self.times=[]
         self.accelerations=[]
         self.springs=[]
@@ -62,7 +62,8 @@ class rubber_band:
         self.max_disp=0.01 
         self.left=pygame.Vector2(0,0)
         self.right=pygame.Vector2(length,0)
-        self.tension=0.5
+        self.tension=float(self.config['rubber_band']['rest_stretch'])
+        
         
         
         for i in range(N):
@@ -73,9 +74,7 @@ class rubber_band:
         for i in range(N-1):
             self.accelerations.append(pygame.Vector2(0,0))
             self.forces.append(pygame.Vector2(0,0))
-    
-
-    
+      
     
     def _get_wave_fft(self,dt):
             
@@ -93,17 +92,22 @@ class rubber_band:
         screen_size=(actual_size[0],round(actual_size[1]*self.v_fraction))  
         return screen_size
     
-    def draw_time_domain(self,screen):
-       
-        screen_size=self._get_simulation_size(screen)
-                       
-        N=2048
+    def draw_time_domain(self,figure,dt):
+        np_amplitudes=self.time_series.to_array()
+        N=len(np_amplitudes)
+        n = np.arange(N)
+        t=n*dt
+        axis=figure.gca()
+        axis.plot(t,np_amplitudes)
+        canvas = agg.FigureCanvasAgg(figure)
+        canvas.draw()
+        renderer = canvas.get_renderer()
+        if self.config['graphs']['rendering_mode']=="ARGB":
+            raw_data = renderer.tostring_argb()
+        else:
+            raw_data = renderer.tostring_rgb()
+        return raw_data
         
-        for i in range(N):
-            
-            screen_position=((i+1)/N*screen_size[0],screen_size[1]/2-self.time_series.item_at(i)/self.max_disp*screen_size[1])
-            
-            pygame.draw.circle(screen, 'red', screen_position, 3)
     
     def draw_fft(self,figure,dt,max_freq):
 
@@ -114,8 +118,11 @@ class rubber_band:
         canvas = agg.FigureCanvasAgg(figure)
         canvas.draw()
         renderer = canvas.get_renderer()
-        raw_data = renderer.tostring_rgb()
-        print(canvas.get_width_height())
+        if self.config['graphs']['rendering_mode']=="ARGB":
+            raw_data = renderer.tostring_argb()
+        else:
+            raw_data = renderer.tostring_rgb()
+        
         return raw_data
                   
     def set_n_armonic(self,n,an):
@@ -197,7 +204,7 @@ class rubber_band:
         for i in range(self.N-1):
             self.beads[i].position+=self.beads[i].velocity*dt
         self.time_series.enqueue(self.beads[int(self.N/2)].position.y)
-        #self.mid_position.append(self.beads[int(self.N/2)].position.y)
+        
    
     def _translate_pixel(self,position,screen_size,length,max_disp):
         screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
