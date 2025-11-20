@@ -15,6 +15,8 @@ config.read(current_path+"/config.ini")
 fig = pylab.figure(figsize=[int(config['graphs']['width']),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
 graph_size=(int(config['graphs']['width'])*int(config['graphs']['resolution']),int(config['graphs']['height'])*int(config['graphs']['resolution']))
 
+fps=int(config['rubber_band']['fps'])
+
 screen_x=1280
 screen_y=1200
 
@@ -52,6 +54,8 @@ show_time_domain=False
 max_freq=1.0
 
 while running:
+    dt = clock.tick(fps)*0.001
+    time+=dt
     frames+=1
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -111,8 +115,7 @@ while running:
                 
     screen.fill("white")
     
-    dt = clock.tick(240)/200
-    time+=dt
+    
     
     sim_font.render_to(screen, (0, 0), f"dt {dt} time {round(time,4)} speed {round(str_spring.get_wave_speed(),4)}", (0, 0, 0))
     if evolution:
@@ -148,7 +151,7 @@ while running:
     
     
     
-    dt = clock.tick(240) 
+    #dt = clock.tick(240) 
     pygame.display.flip()
 
     
