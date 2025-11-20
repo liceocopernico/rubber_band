@@ -122,7 +122,7 @@ while running:
                 
                 surf = pygame.image.fromstring(raw_data, graph_size, config['graphs']['rendering_mode'])
                 
-            screen.blit(surf, (-int(config['graphs']['resolution']),screen_y-graph_size[1]))
+            screen.blit(surf, (-0.9*int(config['graphs']['resolution']),screen_y-graph_size[1]))
         
         if show_spectrum:
             if frames%100==0:

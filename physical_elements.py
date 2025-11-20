@@ -99,6 +99,8 @@ class rubber_band:
         t=n*dt
         axis=figure.gca()
         axis.plot(t,np_amplitudes)
+        matplotlib.pyplot.ylabel('Amplitude (m)')
+        matplotlib.pyplot.xlabel('Time (s)')
         canvas = agg.FigureCanvasAgg(figure)
         canvas.draw()
         renderer = canvas.get_renderer()
@@ -115,6 +117,8 @@ class rubber_band:
         axis=figure.gca()
         axis.plot(data[0],data[1])
         matplotlib.pyplot.xlim(0,max_freq)
+        matplotlib.pyplot.ylabel('FFT Amplitude squared mod')
+        matplotlib.pyplot.xlabel('Frequency (Hz)')
         canvas = agg.FigureCanvasAgg(figure)
         canvas.draw()
         renderer = canvas.get_renderer()
@@ -239,13 +243,12 @@ class rubber_band:
             
             end1=self._translate_pixel(self.beads[i].position+self.forces[i][1],screen_size,self.length,self.max_disp)
             end2=self._translate_pixel(self.beads[i].position+self.forces[i][2],screen_size,self.length,self.max_disp)
-            #total=self._translate_pixel(self.beads[i].position+self.accelerations[i],screen_size,self.length,self.max_disp)
+            
             pygame.draw.line(screen,'red',start,end1)
             pygame.draw.circle(screen, 'red', end1, 2,)
             pygame.draw.line(screen,'green',start,end2)
             pygame.draw.circle(screen, 'green', end2, 2,)
-            #pygame.draw.line(screen,'black',start,total)
-            #pygame.draw.circle(screen, 'black', total, 2,)
+          
     
     def get_bead_anchor(self,mouse_pos):
         
