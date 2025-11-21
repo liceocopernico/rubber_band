@@ -6,7 +6,9 @@ import configparser
 import os
 import pygame
 import pygame.freetype 
-from physical_elements import rubber_band
+from physical_elements import rubber_band,movingObserver
+import pygame_widgets
+from pygame_widgets.button import Button
 
 screen_x=1500
 screen_y=1200
@@ -29,6 +31,11 @@ running = True
 dt =1/float(config['rubber_band']['fps'])*float(config['rubber_band']['gamma'])
 pygame.font.init() 
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
+
+
+
+
+observer=movingObserver(pygame.Vector2(0,0),float(config['rubber_band']['length']),float(config['rubber_band']['max_disp']))
 
 
 str_spring=rubber_band(float(config['rubber_band']['length']),
@@ -59,38 +66,71 @@ surf = pygame.image.frombuffer(raw_data,graph_size, config['graphs']['rendering_
 show_spectrum=False
 show_time_domain=False
 force_scale=1
+place_observer=False
+observer_placed=False
 
 #get base frequency
 base_freq=str_spring.get_wave_speed()/(2*str_spring.length)
 max_freq=base_freq*2
 
 
+def start_evolution():
+    global evolution
+    evolution=True
+    button.setText("Stop")
+
+
+
+button = Button(
+    screen, 100, 100, 300, 150, text='Go',
+    fontSize=50, margin=20,
+    inactiveColour=(255, 0, 0),
+    pressedColour=(0, 255, 0), radius=20,
+    onClick=start_evolution
+)
+ 
+wave_speed=str_spring.get_wave_speed()
+observer.speed=wave_speed
 while running:
     clock.tick(fps)
     time+=dt
     
-    for event in pygame.event.get():
+    events=pygame.event.get()
+    
+    
+    
+    for event in events:
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             anchor=None
+            
             if event.button == 1:
                 anchor=str_spring.get_bead_anchor(event.pos)
                 print(f"Anchor aquired position ")
+            if event.button == 1 and place_observer:
+                place_observer=False
+                observer_placed=True
                 
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 anchor=None
                 print(f"Anchor released")
         if event.type == pygame.MOUSEMOTION:
-          
+            if place_observer:
+                observer.set_observer_position_from_pixel(screen,event.pos)
+                            
+            
             if anchor!=None:
                 str_spring.move_bead(anchor,event.pos,screen)
             
         if event.type== pygame.KEYUP:
-                print(event.key)
+                
                 match event.key:
+                    case pygame.K_w:
+                        place_observer=True
+                        observer_placed=False
                     case pygame.K_s:
                         frames=0
                         evolution=not evolution
@@ -142,7 +182,8 @@ while running:
     
     
     
-    sim_font.render_to(screen, (0, 0), f"dt {dt}  time {round(time,4)}  speed {round(str_spring.get_wave_speed(),4)}   frames {frames}", (0, 0, 0))
+   
+    sim_font.render_to(screen, (0, 0), f"dt {dt}  time {round(time,4)}  speed {round(wave_speed,4)}   frames {frames}", (0, 0, 0))
     
     if evolution:
         frames+=1
@@ -167,6 +208,13 @@ while running:
                 
             screen.blit(surf, (-int(config['graphs']['resolution']),screen_y-graph_size[1]))
  
+    
+    if place_observer or observer_placed:
+            observer.draw_observer(screen)
+            if evolution:
+                
+                observer.update_observer_position(dt)
+    
     
     if forces and evolution:
         str_spring.draw_forces(screen,force_scale)

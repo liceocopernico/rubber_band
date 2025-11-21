@@ -8,6 +8,51 @@ import matplotlib.backends.backend_agg as agg
 import configparser 
 import os
 
+
+
+class movingObserver:
+    def __init__(self,position: pygame.Vector2,path_length,max_disp):
+        self.position=position
+        self.speed=0.0
+        self.observer = pygame.image.load('images/green_medium.png')
+        self.observer_size=self.observer.get_size()
+        self.path_length=path_length
+        self.max_disp=max_disp
+        
+    def _translate_pixel(self,position,screen_size,length,max_disp):
+        screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
+        return screen_position
+    
+    def _get_simulation_size(self,screen):
+        actual_size=pygame.display.get_window_size()
+        screen_size=(actual_size[0],round(actual_size[1]))  
+        return screen_size
+    
+    def set_observer_position_from_pixel(self,screen,mouse_pos):
+        
+        screen_size=self._get_simulation_size(screen)
+        new_y_pos=(screen_size[1]/2-mouse_pos[1]+self.observer_size[1]*0.5)/screen_size[1]*self.max_disp
+        new_x_pos=( mouse_pos[0]-self.observer_size[0]*0.5)/screen_size[0]*self.path_length
+        observer_position=pygame.Vector2(new_x_pos,new_y_pos)
+        self.position=observer_position
+        
+        
+    def update_observer_position(self,dt):
+        self.position.x+=self.speed*dt
+        if self.position.x>self.path_length:
+            self.speed=-self.speed
+            self.position.x=self.path_length
+        elif self.position.x<0:
+            self.speed=-self.speed
+            self.position.x=0
+    
+    def draw_observer(self,screen):
+        screen_size=self._get_simulation_size(screen) 
+        screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
+        screen.blit(self.observer,screen_position)
+        
+
+
 class spring:
     def __init__(self,rest_length,k,mi):
         self.rest_length = rest_length
@@ -105,8 +150,7 @@ class rubber_band:
         
         raw_data = renderer.buffer_rgba()
         return raw_data
-        
-    
+       
     def draw_fft(self,figure,dt,max_freq):
 
         data=self._get_wave_fft(dt)
@@ -214,7 +258,7 @@ class rubber_band:
         
         screen_size=self._get_simulation_size(screen)
         new_y_pos=(screen_size[1]/2-mouse_pos[1])/screen_size[1]*self.max_disp
-        print(new_y_pos)
+        
         if abs(new_y_pos)>0.5*self.max_disp:
             new_y_pos=0.5*self.max_disp*np.sign(new_y_pos)
         
@@ -236,7 +280,7 @@ class rubber_band:
                start=self._translate_pixel(self.beads[i-1].position,screen_size,self.length,self.max_disp)
                end=self._translate_pixel(self.beads[i].position,screen_size,self.length,self.max_disp) 
                
-            pygame.draw.line(screen,'red',start,end)
+            pygame.draw.line(screen,'black',start,end,3)
     
     def draw_beads(self,screen):
         
