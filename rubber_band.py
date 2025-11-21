@@ -8,17 +8,18 @@ import pygame
 import pygame.freetype 
 from physical_elements import rubber_band
 
+screen_x=1500
+screen_y=1200
 
 config = configparser.ConfigParser()
 current_path=os.path.dirname(os.path.realpath(__file__))
 config.read(current_path+"/config.ini")
-fig = pylab.figure(figsize=[int(config['graphs']['width']),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
-graph_size=(int(config['graphs']['width'])*int(config['graphs']['resolution']),int(config['graphs']['height'])*int(config['graphs']['resolution']))
+fig = pylab.figure(figsize=[int(screen_x/int(config['graphs']['resolution'])),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
+graph_size=(screen_x,int(config['graphs']['height'])*int(config['graphs']['resolution']))
 
 fps=int(config['rubber_band']['fps'])
 
-screen_x=1280
-screen_y=1200
+
 
 
 pygame.init()
@@ -59,8 +60,16 @@ draw_beads_springs=False
 surf = pygame.image.frombytes(raw_data,graph_size, config['graphs']['rendering_mode'])
 show_spectrum=False
 show_time_domain=False
-max_freq=1.0
+
 force_scale=1
+
+#get base frequency
+
+base_freq=str_spring.get_wave_speed()/(2*str_spring.length)
+
+max_freq=base_freq*2
+
+
 while running:
     clock.tick(fps)
     time+=dt
@@ -106,10 +115,11 @@ while running:
                         str_spring.set_n_armonic(armonic,0.25)
                     case pygame.K_l:
                         show_spectrum= not show_spectrum
+                        show_time_domain=False
                     case pygame.K_j:
-                        max_freq+=0.1
+                        max_freq+=0.1*base_freq
                     case pygame.K_k:
-                        max_freq-=0.1
+                        max_freq-=0.1*base_freq
                     case pygame.K_z:
                         armonic-=1
                         if armonic<1:
@@ -119,6 +129,7 @@ while running:
                         str_spring.set_n_m_armonic(3,7)
                     case pygame.K_t:
                         show_time_domain= not show_time_domain
+                        show_spectrum=False
                     case pygame.K_e:
                         draw_connected= True
                         draw_beabds_springs=False
@@ -140,9 +151,6 @@ while running:
     if evolution:
         frames+=1
         str_spring.compute_forces_accel()
-        """ if frames==1:
-            str_spring.compute_velocity(0.5*dt)
-        else: """
         str_spring.compute_velocity(dt)
         str_spring.compute_position(dt)
         
