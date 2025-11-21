@@ -16,7 +16,6 @@ current_path=os.path.dirname(os.path.realpath(__file__))
 config.read(current_path+"/config.ini")
 fig = pylab.figure(figsize=[int(screen_x/int(config['graphs']['resolution'])),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
 graph_size=(screen_x,int(config['graphs']['height'])*int(config['graphs']['resolution']))
-
 fps=int(config['rubber_band']['fps'])
 
 
@@ -29,7 +28,6 @@ clock = pygame.time.Clock()
 running = True
 dt =1/float(config['rubber_band']['fps'])*float(config['rubber_band']['gamma'])
 pygame.font.init() 
-
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
 
 
@@ -41,13 +39,13 @@ str_spring=rubber_band(float(config['rubber_band']['length']),
                        float(config['rubber_band']['max_disp']))
 
 anchor=None
-
 evolution=False
 forces=False
 armonic=1
 time=0
 frames=0
 raw_data=str_spring.draw_fft(fig,0.01,1.0)
+
 if config['graphs']['beads_draw_mode']=="connected":
     draw_connected=True
 else:
@@ -57,16 +55,13 @@ draw_beads_springs=False
 
 
     
-surf = pygame.image.frombytes(raw_data,graph_size, config['graphs']['rendering_mode'])
+surf = pygame.image.frombuffer(raw_data,graph_size, config['graphs']['rendering_mode'])
 show_spectrum=False
 show_time_domain=False
-
 force_scale=1
 
 #get base frequency
-
 base_freq=str_spring.get_wave_speed()/(2*str_spring.length)
-
 max_freq=base_freq*2
 
 
@@ -147,7 +142,8 @@ while running:
     
     
     
-    sim_font.render_to(screen, (0, 0), f"dt {dt} time {round(time,4)} speed {round(str_spring.get_wave_speed(),4)}", (0, 0, 0))
+    sim_font.render_to(screen, (0, 0), f"dt {dt}  time {round(time,4)}  speed {round(str_spring.get_wave_speed(),4)}   frames {frames}", (0, 0, 0))
+    
     if evolution:
         frames+=1
         str_spring.compute_forces_accel()
@@ -158,7 +154,7 @@ while running:
             if frames%100==0:
                 fig.clear()
                 raw_data=str_spring.draw_time_domain(fig,dt)
-                surf = pygame.image.fromstring(raw_data, graph_size, config['graphs']['rendering_mode'])
+                surf = pygame.image.frombuffer(raw_data, graph_size, config['graphs']['rendering_mode'])
                 
             screen.blit(surf, (-0.9*int(config['graphs']['resolution']),screen_y-graph_size[1]))
         
@@ -167,7 +163,7 @@ while running:
                 fig.clear()
                 raw_data=str_spring.draw_fft(fig,dt,max_freq)
                 
-                surf = pygame.image.fromstring(raw_data, graph_size, config['graphs']['rendering_mode'])
+                surf = pygame.image.frombuffer(raw_data, graph_size, config['graphs']['rendering_mode'])
                 
             screen.blit(surf, (-int(config['graphs']['resolution']),screen_y-graph_size[1]))
  

@@ -1,5 +1,4 @@
 import pygame
-import pygame.freetype 
 import math
 from numpy.fft import fft
 import numpy as np
@@ -22,9 +21,7 @@ class bead:
         self.velocity=pygame.Vector2(0,0)
         self.r = r
         self.color = "blue"
-        
         self.mass=mass
-        
         self.rectangle=pygame.Rect(0,0,0,0)
         
     def draw(self,screen,screen_size,length,max_disp):        
@@ -105,10 +102,8 @@ class rubber_band:
         canvas = agg.FigureCanvasAgg(figure)
         canvas.draw()
         renderer = canvas.get_renderer()
-        if self.config['graphs']['rendering_mode']=="ARGB":
-            raw_data = renderer.tostring_argb()
-        else:
-            raw_data = renderer.tostring_rgb()
+        
+        raw_data = renderer.buffer_rgba()
         return raw_data
         
     
@@ -123,10 +118,8 @@ class rubber_band:
         canvas = agg.FigureCanvasAgg(figure)
         canvas.draw()
         renderer = canvas.get_renderer()
-        if self.config['graphs']['rendering_mode']=="ARGB":
-            raw_data = renderer.tostring_argb()
-        else:
-            raw_data = renderer.tostring_rgb()
+       
+        raw_data = renderer.buffer_rgba()
         
         return raw_data
                   
