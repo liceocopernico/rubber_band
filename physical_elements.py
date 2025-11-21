@@ -38,7 +38,7 @@ class bead:
         return None
 
 class rubber_band:
-    def __init__(self,length,mass,N,cross_section,y_mod):
+    def __init__(self,length,mass,N,cross_section,y_mod,max_disp):
         
         self.config = configparser.ConfigParser()
         current_path=os.path.dirname(os.path.realpath(__file__))
@@ -60,7 +60,7 @@ class rubber_band:
         self.accelerations=[]
         self.springs=[]
         self.damping=float(self.config['rubber_band']['damping_factor'])
-        self.max_disp=0.01 
+        self.max_disp=max_disp
         self.left=pygame.Vector2(0,0)
         self.right=pygame.Vector2(length,0)
         self.tension=float(self.config['rubber_band']['rest_stretch'])
@@ -254,14 +254,14 @@ class rubber_band:
     def get_bead_dynamics(self,i):
         return (self.beads[i].position,self.beads[i].velocity,self.accelerations[i])
     
-    def draw_forces(self,screen):
+    def draw_forces(self,screen,scale):
        
         screen_size=self._get_simulation_size(screen)
         for i in range(self.N-1):
             start=self._translate_pixel(self.beads[i].position,screen_size,self.length,self.max_disp)
             
-            end1=self._translate_pixel(self.beads[i].position+self.forces[i][1],screen_size,self.length,self.max_disp)
-            end2=self._translate_pixel(self.beads[i].position+self.forces[i][2],screen_size,self.length,self.max_disp)
+            end1=self._translate_pixel(self.beads[i].position+scale*self.forces[i][1],screen_size,self.length,self.max_disp)
+            end2=self._translate_pixel(self.beads[i].position+scale*self.forces[i][2],screen_size,self.length,self.max_disp)
             
             pygame.draw.line(screen,'red',start,end1)
             pygame.draw.circle(screen, 'red', end1, 2,)

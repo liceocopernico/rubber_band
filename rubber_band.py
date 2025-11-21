@@ -26,13 +26,18 @@ screen = pygame.display.set_mode((screen_x, screen_y))
 pygame.display.set_caption("Rubber band simulation")
 clock = pygame.time.Clock()
 running = True
-dt = 0
+dt =1/float(config['rubber_band']['fps'])*float(config['rubber_band']['gamma'])
 pygame.font.init() 
 
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
 
 
-str_spring=rubber_band(0.5,0.01,int(config['rubber_band']['beads_number']),0.005,7350.0)
+str_spring=rubber_band(float(config['rubber_band']['length']),
+                       float(config['rubber_band']['mass']),
+                       int(config['rubber_band']['beads_number']),
+                       float(config['rubber_band']['cross_section']),
+                       float(config['rubber_band']['y_mod']),
+                       float(config['rubber_band']['max_disp']))
 
 anchor=None
 
@@ -47,14 +52,17 @@ if config['graphs']['beads_draw_mode']=="connected":
 else:
     draw_connected=False
 
+draw_beads_springs=False
+
+
     
 surf = pygame.image.frombytes(raw_data,graph_size, config['graphs']['rendering_mode'])
 show_spectrum=False
 show_time_domain=False
 max_freq=1.0
-
+force_scale=1
 while running:
-    dt = clock.tick(fps)*0.000001
+    clock.tick(fps)
     time+=dt
     
     for event in pygame.event.get():
@@ -112,7 +120,17 @@ while running:
                     case pygame.K_t:
                         show_time_domain= not show_time_domain
                     case pygame.K_e:
-                        draw_connected= not draw_connected
+                        draw_connected= True
+                        draw_beabds_springs=False
+                    case pygame.K_u:
+                        draw_connected= False
+                        draw_beads_springs=True
+                    case pygame.K_g:
+                        force_scale*=0.5
+                    case pygame.K_h:
+                        force_scale*=2                   
+                        if force_scale>2:
+                            force_scale=1
                 
     screen.fill("white")
     
@@ -122,11 +140,11 @@ while running:
     if evolution:
         frames+=1
         str_spring.compute_forces_accel()
-        if frames==1:
+        """ if frames==1:
             str_spring.compute_velocity(0.5*dt)
-        else:
-            str_spring.compute_velocity(dt)
-            str_spring.compute_position(dt)
+        else: """
+        str_spring.compute_velocity(dt)
+        str_spring.compute_position(dt)
         
         if show_time_domain:
             if frames%100==0:
@@ -147,13 +165,15 @@ while running:
  
     
     if forces and evolution:
-        str_spring.draw_forces(screen)
+        str_spring.draw_forces(screen,force_scale)
+    
     if draw_connected:
         str_spring.draw_connected_beads(screen)
+    elif draw_beads_springs:
+        str_spring.draw_connected_beads(screen)
+        str_spring.draw_beads(screen)
     else:
         str_spring.draw_beads(screen)
-    
-    
     
     
     pygame.display.flip()
