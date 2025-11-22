@@ -10,6 +10,9 @@ from physical_elements import rubber_band,movingObserver
 import pygame_widgets
 from pygame_widgets.button import Button
 
+from event_manager import Notifier
+
+
 screen_x=1500
 screen_y=1200
 
@@ -24,10 +27,11 @@ fps=int(config['rubber_band']['fps'])
 
 
 pygame.init()
+
 screen = pygame.display.set_mode((screen_x, screen_y))
 pygame.display.set_caption("Rubber band simulation")
 clock = pygame.time.Clock()
-running = True
+
 dt =1/float(config['rubber_band']['fps'])*float(config['rubber_band']['gamma'])
 pygame.font.init() 
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
@@ -35,7 +39,7 @@ sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
 
 
 
-observer=movingObserver(pygame.Vector2(0,0),float(config['rubber_band']['length']),float(config['rubber_band']['max_disp']))
+
 
 
 str_spring=rubber_band(float(config['rubber_band']['length']),
@@ -45,33 +49,11 @@ str_spring=rubber_band(float(config['rubber_band']['length']),
                        float(config['rubber_band']['y_mod']),
                        float(config['rubber_band']['max_disp']))
 
-anchor=None
-evolution=False
-forces=False
-armonic=1
-time=0
-frames=0
-raw_data=str_spring.draw_fft(fig,0.01,1.0)
 
-if config['graphs']['beads_draw_mode']=="connected":
-    draw_connected=True
-else:
-    draw_connected=False
+observer=movingObserver(pygame.Vector2(0,0),
+                        float(config['rubber_band']['length']),
+                        float(config['rubber_band']['max_disp']))
 
-draw_beads_springs=False
-
-
-    
-surf = pygame.image.frombuffer(raw_data,graph_size, config['graphs']['rendering_mode'])
-show_spectrum=False
-show_time_domain=False
-force_scale=1
-place_observer=False
-observer_placed=False
-
-#get base frequency
-base_freq=str_spring.get_wave_speed()/(2*str_spring.length)
-max_freq=base_freq*2
 
 
 def start_evolution():
@@ -91,143 +73,49 @@ button = Button(
  
 wave_speed=str_spring.get_wave_speed()
 observer.speed=wave_speed
-while running:
+
+notifier=Notifier()
+def quit_simulation():
+    pygame.quit()
+    quit()
+
+
+
+notifier.subscribe(pygame.KEYUP,observer)
+notifier.subscribe(pygame.QUIT,quit_simulation)
+notifier.subscribe(pygame.MOUSEBUTTONDOWN,str_spring)
+notifier.subscribe(pygame.MOUSEBUTTONDOWN,observer)
+notifier.subscribe(pygame.MOUSEBUTTONUP,str_spring)
+notifier.subscribe(pygame.MOUSEMOTION,str_spring)
+notifier.subscribe(pygame.MOUSEMOTION,observer)
+notifier.subscribe(pygame.KEYUP,str_spring)
+
+
+while True:
     clock.tick(fps)
-    time+=dt
-    
-    events=pygame.event.get()
     
     
     
-    for event in events:
-        if event.type == pygame.QUIT:
-            running = False
-            pygame.quit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            anchor=None
-            
-            if event.button == 1:
-                anchor=str_spring.get_bead_anchor(event.pos)
-                print(f"Anchor aquired position ")
-            if event.button == 1 and place_observer:
-                place_observer=False
-                observer_placed=True
-                
-        if event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
-                anchor=None
-                print(f"Anchor released")
-        if event.type == pygame.MOUSEMOTION:
-            if place_observer:
-                observer.set_observer_position_from_pixel(screen,event.pos)
-                            
-            
-            if anchor!=None:
-                str_spring.move_bead(anchor,event.pos,screen)
-            
-        if event.type== pygame.KEYUP:
-                
-                match event.key:
-                    case pygame.K_w:
-                        place_observer=True
-                        observer_placed=False
-                    case pygame.K_s:
-                        frames=0
-                        evolution=not evolution
-                    case pygame.K_f:
-                        forces=not forces
-                    case pygame.K_r:
-                        evolution=False
-                        str_spring.reset()
-                    case pygame.K_a:
-                        str_spring.set_n_armonic(1,0.25)
-                    case pygame.K_b:
-                        str_spring.set_impulse1()
-                    case pygame.K_c:
-                        str_spring.set_n_armonic(5,0.25)
-                    case pygame.K_x:
-                        armonic+=1
-                        str_spring.set_n_armonic(armonic,0.25)
-                    case pygame.K_l:
-                        show_spectrum= not show_spectrum
-                        show_time_domain=False
-                    case pygame.K_j:
-                        max_freq+=0.1*base_freq
-                    case pygame.K_k:
-                        max_freq-=0.1*base_freq
-                    case pygame.K_z:
-                        armonic-=1
-                        if armonic<1:
-                            armonic=1
-                        str_spring.set_n_armonic(armonic,0.25)
-                    case pygame.K_o:
-                        str_spring.set_n_m_armonic(3,7)
-                    case pygame.K_t:
-                        show_time_domain= not show_time_domain
-                        show_spectrum=False
-                    case pygame.K_e:
-                        draw_connected= True
-                        draw_beabds_springs=False
-                    case pygame.K_u:
-                        draw_connected= False
-                        draw_beads_springs=True
-                    case pygame.K_g:
-                        force_scale*=0.5
-                    case pygame.K_h:
-                        force_scale*=2                   
-                        if force_scale>2:
-                            force_scale=1
-                
+    notifier.dispatch(pygame.event.get(),screen)
     screen.fill("white")
     
     
     
    
-    sim_font.render_to(screen, (0, 0), f"dt {dt}  time {round(time,4)}  speed {round(wave_speed,4)}   frames {frames}", (0, 0, 0))
+    sim_font.render_to(screen, (0, 0), f"dt {dt}  time {round(str_spring.state['time'],4)}  speed {round(wave_speed,4)}   frames {str_spring.state['frames']}", (0, 0, 0))
     
-    if evolution:
-        frames+=1
-        str_spring.compute_forces_accel()
-        str_spring.compute_velocity(dt)
-        str_spring.compute_position(dt)
-        
-        if show_time_domain:
-            if frames%100==0:
-                fig.clear()
-                raw_data=str_spring.draw_time_domain(fig,dt)
-                surf = pygame.image.frombuffer(raw_data, graph_size, config['graphs']['rendering_mode'])
-                
-            screen.blit(surf, (-0.9*int(config['graphs']['resolution']),screen_y-graph_size[1]))
-        
-        if show_spectrum:
-            if frames%100==0:
-                fig.clear()
-                raw_data=str_spring.draw_fft(fig,dt,max_freq)
-                
-                surf = pygame.image.frombuffer(raw_data, graph_size, config['graphs']['rendering_mode'])
-                
-            screen.blit(surf, (-int(config['graphs']['resolution']),screen_y-graph_size[1]))
- 
-    
-    if place_observer or observer_placed:
-            observer.draw_observer(screen)
-            if evolution:
-                
-                observer.update_observer_position(dt)
-    
-    
-    if forces and evolution:
-        str_spring.draw_forces(screen,force_scale)
-    
-    if draw_connected:
-        str_spring.draw_connected_beads(screen)
-    elif draw_beads_springs:
-        str_spring.draw_connected_beads(screen)
-        str_spring.draw_beads(screen)
-    else:
-        str_spring.draw_beads(screen)
-    
-    
+    observer.draw_observer(screen)
+    str_spring.compute_forces_accel()
+    str_spring.compute_velocity(dt)
+    str_spring.compute_position(dt)
+    str_spring.draw_forces(screen)
+    str_spring.draw_connected_beads(screen)
+    str_spring.draw_beads(screen)
+    str_spring.draw_time_domain(screen,fig,dt,graph_size, config['graphs']['rendering_mode'],screen_y)
+    str_spring.draw_fft(screen,fig,dt,graph_size, config['graphs']['rendering_mode'],screen_y)
+    observer.update_observer_position(dt)
+  
+  
     pygame.display.flip()
 
     

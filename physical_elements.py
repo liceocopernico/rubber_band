@@ -18,6 +18,8 @@ class movingObserver:
         self.observer_size=self.observer.get_size()
         self.path_length=path_length
         self.max_disp=max_disp
+        self.place_observer=False
+        self.observer_placed=False
         
     def _translate_pixel(self,position,screen_size,length,max_disp):
         screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
@@ -28,6 +30,21 @@ class movingObserver:
         screen_size=(actual_size[0],round(actual_size[1]))  
         return screen_size
     
+    def handle_event(self,event,screen):
+        match event.type:
+            case pygame.KEYUP:
+                if event.key==pygame.K_w:
+                    self.place_observer=True
+                    self.observer_placed=False
+                    print("Place observer")
+            case pygame.MOUSEMOTION:
+                if self.place_observer:
+                    self.set_observer_position_from_pixel(screen,event.pos)
+            case pygame.MOUSEBUTTONDOWN:
+                if event.button==1:
+                    self.place_observer=False
+                    self.observer_placed=True
+            
     def set_observer_position_from_pixel(self,screen,mouse_pos):
         
         screen_size=self._get_simulation_size(screen)
@@ -47,9 +64,10 @@ class movingObserver:
             self.position.x=0
     
     def draw_observer(self,screen):
-        screen_size=self._get_simulation_size(screen) 
-        screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
-        screen.blit(self.observer,screen_position)
+        if self.place_observer or self.observer_placed:
+            screen_size=self._get_simulation_size(screen) 
+            screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
+            screen.blit(self.observer,screen_position)
         
 
 
@@ -106,8 +124,9 @@ class rubber_band:
         self.left=pygame.Vector2(0,0)
         self.right=pygame.Vector2(length,0)
         self.tension=float(self.config['rubber_band']['rest_stretch'])
+        self.anchor=None
         
-        
+        self.surf=None
         
         for i in range(N):
             self.springs.append(spring(self.tension*length/N,self.k_spring,self.damping))
@@ -117,7 +136,90 @@ class rubber_band:
         for i in range(N-1):
             self.accelerations.append(pygame.Vector2(0,0))
             self.forces.append(pygame.Vector2(0,0))
-      
+        
+        self.state=self._set_init_state()
+   
+   
+    def handle_event(self,event,screen):
+        match event.type:
+            case pygame.MOUSEBUTTONDOWN:
+                if event.button==1:
+                    self.anchor=self.get_bead_anchor(event.pos)
+                    if self.anchor:
+                        print(f"Anchor aquired position ")
+            case pygame.MOUSEMOTION:    
+                if self.anchor:
+                    self.move_bead(self.anchor,event.pos,screen)
+            case pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    if self.anchor:
+                        print(f"Anchor released")
+                    self.anchor=None
+            case pygame.KEYUP:
+                match event.key:
+                    case pygame.K_f:
+                        self.state['forces']=not self.state['forces']
+                    case pygame.K_s:
+                        self.state['frames']=0
+                        self.state['evolution']=not self.state['evolution']
+                    case pygame.K_r:
+                        self.reset()
+                    case pygame.K_a:
+                        self.set_n_armonic(1,0.25)
+                    case pygame.K_b:
+                        self.set_impulse1()
+                    case pygame.K_c:
+                        self.set_n_armonic(5,0.25)
+                    case pygame.K_x:
+                        self.state['armonic']+=1
+                        self.set_n_armonic(self.state['armonic'],0.25)
+                    case pygame.K_l:
+                        self.state['freq_domain']= not self.state['freq_domain']
+                        self.state['time_domain'] =False
+                        self.surf=None
+                    case pygame.K_t:
+                        self.state['time_domain']= not self.state['time_domain']
+                        self.state['freq_domain']=False
+                        self.surf=None
+                    case pygame.K_j:
+                        self.state['max_freq']+=0.1*self.get_zeroth_freq()
+                    case pygame.K_k:
+                        self.state['max_freq']-=0.1*self.get_zeroth_freq()
+                    case pygame.K_z:
+                        self.state['armonic']-=1
+                        if self.state['armonic']<1:
+                            self.state['armonic']=1
+                        self.set_n_armonic(self.state['armonic'],0.25)
+                    case pygame.K_o:
+                        self.set_n_m_armonic(3,7)
+                    case pygame.K_e:
+                        self.state['connected']= not self.state['connected']
+                        
+                    case pygame.K_u:
+                        self.state['beads']= not self.state['beads'] 
+                    case pygame.K_g:
+                        self.state['force_scale']*=0.5
+                        
+                    case pygame.K_h:
+                        self.state['force_scale']*=2                   
+                        if self.state['force_scale']>2:
+                            self.state['force_scale']=1 
+    
+    def _set_init_state(self):
+        state={'frames':0,
+               'forces':False,
+               'freq_domain':False,
+               'time_domain':False,
+               'time':0.0,
+               'evolution':False,
+               'armonic':1,
+               'connected':False,
+               'beads':True,
+               'force_scale':1.0,
+               'max_freq':2*self.get_zeroth_freq(),
+               
+               }
+        return state
     
     def _get_wave_fft(self,dt):
             
@@ -134,44 +236,65 @@ class rubber_band:
         actual_size=pygame.display.get_window_size()
         screen_size=(actual_size[0],round(actual_size[1]*self.v_fraction))  
         return screen_size
+ 
+    def get_zeroth_freq(self):
+        base_freq=self.get_wave_speed()/(2*self.length)
+        return base_freq
     
-    def draw_time_domain(self,figure,dt):
-        np_amplitudes=self.time_series.to_array()
-        N=len(np_amplitudes)
-        n = np.arange(N)
-        t=n*dt
-        axis=figure.gca()
-        axis.plot(t,np_amplitudes)
-        matplotlib.pyplot.ylabel('Amplitude (m)')
-        matplotlib.pyplot.xlabel('Time (s)')
-        canvas = agg.FigureCanvasAgg(figure)
-        canvas.draw()
-        renderer = canvas.get_renderer()
+    def draw_time_domain(self,screen,figure,dt,graph_size,rendering_mode,screen_y):
         
-        raw_data = renderer.buffer_rgba()
-        return raw_data
-       
-    def draw_fft(self,figure,dt,max_freq):
-
-        data=self._get_wave_fft(dt)
-        axis=figure.gca()
-        axis.plot(data[0],data[1])
-        matplotlib.pyplot.xlim(0,max_freq)
-        matplotlib.pyplot.ylabel('FFT Amplitude squared mod')
-        matplotlib.pyplot.xlabel('Frequency (Hz)')
-        canvas = agg.FigureCanvasAgg(figure)
-        canvas.draw()
-        renderer = canvas.get_renderer()
-       
-        raw_data = renderer.buffer_rgba()
+        if not self.state['time_domain'] or not self.state['evolution']:
+            return
         
-        return raw_data
+        if self.state['frames']%100==0:
+            figure.clear()
+            np_amplitudes=self.time_series.to_array()
+            N=len(np_amplitudes)
+            n = np.arange(N)
+            t=n*dt
+            axis=figure.gca()
+            axis.plot(t,np_amplitudes)
+            matplotlib.pyplot.ylabel('Amplitude (m)')
+            matplotlib.pyplot.xlabel('Time (s)')
+            canvas = agg.FigureCanvasAgg(figure)
+            canvas.draw()
+            renderer = canvas.get_renderer()
+            
+            raw_data = renderer.buffer_rgba()
+            self.surf = pygame.image.frombuffer(raw_data, graph_size, rendering_mode)
+            screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
+        
+        if self.surf:
+            screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
+        
+       
+    def draw_fft(self,screen,figure,dt,graph_size,rendering_mode,screen_y):
+        if not self.state['freq_domain'] or not self.state['evolution']:
+            return
+        
+        if self.state['frames']%100==0:
+            
+            figure.clear()
+            data=self._get_wave_fft(dt)
+            axis=figure.gca()
+            axis.plot(data[0],data[1])
+            matplotlib.pyplot.xlim(0,self.state['max_freq'])
+            matplotlib.pyplot.ylabel('FFT Amplitude squared mod')
+            matplotlib.pyplot.xlabel('Frequency (Hz)')
+            canvas = agg.FigureCanvasAgg(figure)
+            canvas.draw()
+            renderer = canvas.get_renderer()
+            raw_data = renderer.buffer_rgba()
+            self.surf = pygame.image.frombuffer(raw_data, graph_size, rendering_mode)
+            screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
+        if self.surf:
+            screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
+        
                   
     def set_n_armonic(self,n,an):
         for i in range(self.N-1):
             x_pos=(i+1)*self.length/self.N
             self.beads[i].position=pygame.Vector2(x_pos,an*self.max_disp*math.sin(n*math.pi/self.length*x_pos)    )
-
 
     def set_n_m_armonic(self,n,m):
         an=1.0/math.sqrt(2)*0.25
@@ -190,7 +313,10 @@ class rubber_band:
             self.beads[i].position=pygame.Vector2(x_pos,0.25*self.max_disp*math.sin(10*math.pi/self.length*x_pos)    )
        
     def reset(self):
+        self.time_series=timeCirBuffer(np.arange(self.w_size)*0.0,self.w_size)
+        self.state=self._set_init_state()
         for i in range(self.N-1):
+            
             self.forces[i]=pygame.Vector2(0,0)
             self.accelerations[i]=pygame.Vector2(0,0)
             self.beads[i].position=pygame.Vector2((i+1)*self.length/self.N,0)
@@ -233,7 +359,10 @@ class rubber_band:
         
         return [total_force,left_force,right_force]
 
-    def compute_forces_accel(self):   
+    def compute_forces_accel(self):
+        if not self.state['evolution']:
+            return
+       
         for i in range(self.N-1):
                force=self.compute_force(i)
                accelleration=force[0]/self.beads[i].mass
@@ -241,15 +370,20 @@ class rubber_band:
                self.forces[i]=force
 
     def compute_velocity(self,dt):
+        if not self.state['evolution']:
+            return
         for i in range(self.N-1):
             self.beads[i].velocity+=self.accelerations[i]*dt
     
     def compute_position(self,dt):
+        if not self.state['evolution']:
+            return
         for i in range(self.N-1):
             self.beads[i].position+=self.beads[i].velocity*dt
         self.time_series.enqueue(self.beads[int(self.N/2)].position.y)
-        
-   
+        self.state['time']+=dt
+        self.state['frames']+=1
+         
     def _translate_pixel(self,position,screen_size,length,max_disp):
         screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
         return screen_position
@@ -264,9 +398,10 @@ class rubber_band:
         
         system_position=pygame.Vector2(self.beads[bead_index].position.x,new_y_pos)
         self.beads[bead_index].position=system_position
-        
-    
+           
     def draw_connected_beads(self,screen):
+        if not self.state['connected']:
+            return
         screen_size=self._get_simulation_size(screen)        
         for i in range(self.N):
             if i==0:
@@ -283,7 +418,8 @@ class rubber_band:
             pygame.draw.line(screen,'black',start,end,3)
     
     def draw_beads(self,screen):
-        
+        if not self.state['beads']:
+            return
         screen_size=self._get_simulation_size(screen)
         for bead in self.beads:
             bead.draw(screen,screen_size,self.length,self.max_disp)
@@ -291,8 +427,11 @@ class rubber_band:
     def get_bead_dynamics(self,i):
         return (self.beads[i].position,self.beads[i].velocity,self.accelerations[i])
     
-    def draw_forces(self,screen,scale):
-       
+    def draw_forces(self,screen):
+        if not self.state['forces'] or not self.state['evolution']:
+            return
+        
+        scale=self.state['force_scale']
         screen_size=self._get_simulation_size(screen)
         for i in range(self.N-1):
             start=self._translate_pixel(self.beads[i].position,screen_size,self.length,self.max_disp)
@@ -305,7 +444,6 @@ class rubber_band:
             pygame.draw.line(screen,'green',start,end2)
             pygame.draw.circle(screen, 'green', end2, 2,)
           
-    
     def get_bead_anchor(self,mouse_pos):
         
         
