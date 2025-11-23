@@ -157,10 +157,10 @@ class rubber_band:
                         self.state['harmonic']+=1
                         self.set_n_harmonic(self.state['harmonic'],0.25)
                     case pygame.K_z:
-                        self.state['hharmonic']-=1
-                        if self.state['hharmonic']<1:
-                            self.state['hharmonic']=1
-                        self.set_n_hharmonic(self.state['hharmonic'],0.25)
+                        self.state['harmonic']-=1
+                        if self.state['harmonic']<1:
+                            self.state['harmonic']=1
+                        self.set_n_harmonic(self.state['harmonic'],0.25)
                     case pygame.K_l:
                         self.state['freq_domain']= not self.state['freq_domain']
                         self.state['time_domain'] =False
@@ -175,7 +175,7 @@ class rubber_band:
                         self.state['max_freq']-=0.1*self.get_zeroth_freq()
                     
                     case pygame.K_o:
-                        self.set_n_m_hharmonic(3,7)
+                        self.set_n_m_harmonic(3,7)
                     case pygame.K_e:
                         self.state['connected']= not self.state['connected']
                         
@@ -506,10 +506,7 @@ class rubber_band:
                return i
         return None
 
-            
-      
-
-class movingObserver:
+class moving_observer:
     def __init__(self,position: pygame.Vector2,path_length,max_disp,rubber_band: rubber_band):
         self.position=position
         self.speed=rubber_band.get_wave_speed()

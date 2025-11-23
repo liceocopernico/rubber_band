@@ -5,7 +5,7 @@ import pylab
 import configparser 
 import os
 import pygame
-from physical_elements import rubber_band,movingObserver
+from physical_elements import rubber_band,moving_observer
 from graphics import text_renderer
 from event_manager import Notifier
 
@@ -49,7 +49,7 @@ str_spring=rubber_band(float(config['rubber_band']['length']),
                        float(config['rubber_band']['max_disp']))
 
 
-observer=movingObserver(pygame.Vector2(0,0),
+observer=moving_observer(pygame.Vector2(0,0),
                         float(config['rubber_band']['length']),
                         float(config['rubber_band']['max_disp']),
                         str_spring)
