@@ -21,7 +21,6 @@ screen_x=int(config['screen']['screenx'])
 screen_y=int(config['screen']['screeny'])
 
 
-
 fig = pylab.figure(figsize=[int(screen_x/int(config['graphs']['resolution'])),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
 graph_size=(screen_x,int(config['graphs']['height'])*int(config['graphs']['resolution']))
 
@@ -87,11 +86,12 @@ while True:
     str_spring.compute_forces_accel()
     str_spring.compute_velocity()
     str_spring.compute_position()
+    str_spring.draw_time_domain(screen,fig,graph_size, config['graphs']['rendering_mode'],screen_y)
+    str_spring.draw_fft(screen,fig,graph_size, config['graphs']['rendering_mode'],screen_y)
     str_spring.draw_forces(screen)
     str_spring.draw_connected_beads(screen)
     str_spring.draw_beads(screen)
-    str_spring.draw_time_domain(screen,fig,graph_size, config['graphs']['rendering_mode'],screen_y)
-    str_spring.draw_fft(screen,fig,graph_size, config['graphs']['rendering_mode'],screen_y)
+    
     
     
     observer.draw_observer(screen)
