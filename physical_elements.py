@@ -217,7 +217,7 @@ class rubber_band:
                'harmonic':1,
                'connected':False,
                'beads':True,
-               'force_scale':1.0,
+               'force_scale':0.25,
                'max_freq':2*self.get_zeroth_freq(),
                
                }
@@ -290,7 +290,7 @@ class rubber_band:
         if self.state['frames']%100==0:
             
             figure.clear()
-            data=self._get_wave_fft(self.dt)
+            data=self._get_wave_fft()
             axis=figure.gca()
             axis.plot(data[0],data[1])
             matplotlib.pyplot.xlim(0,self.state['max_freq'])
@@ -499,23 +499,48 @@ class rubber_band:
     def get_bead_dynamics(self,i):
         return (self.beads[i].position,self.beads[i].velocity,self.accelerations[i])
     
+    def _draw_arrow_head(self,size,angle,color):
+        surface=pygame.Surface((size,size),pygame.SRCALPHA, 32 )    
+        pygame.draw.polygon( surface, color,((size,0.5*size),(0,0),(0,size) ))
+        surface=pygame.transform.rotate(surface,angle)
+        return surface
+        
     def draw_forces(self,screen):
         if not self.state['forces'] or not self.state['evolution']:
             return
         
-        scale=self.state['force_scale']
+        if self.N>35:
+            return
+        
+        x_versor=pygame.Vector2(1,0)
+        
+        
+        
         screen_size=self._get_simulation_size(screen)
+        scale=self.state['force_scale']
+        mean_spring_length=self.length/self.N
+        
         for i in range(self.N-1):
+            
             start=self._translate_pixel(self.beads[i].position,screen_size,self.length,self.max_disp)
             
-            end1=self._translate_pixel(self.beads[i].position+scale*self.forces[i][1],screen_size,self.length,self.max_disp)
-            end2=self._translate_pixel(self.beads[i].position+scale*self.forces[i][2],screen_size,self.length,self.max_disp)
+            end1=self._translate_pixel(self.beads[i].position+mean_spring_length*scale*self.forces[i][1]*1/self.forces[i][1].length(),screen_size,self.length,self.max_disp)
+            end2=self._translate_pixel(self.beads[i].position+mean_spring_length*scale*self.forces[i][2]*1/self.forces[i][1].length(),screen_size,self.length,self.max_disp)
             
-            pygame.draw.line(screen,'red',start,end1)
-            pygame.draw.circle(screen, 'red', end1, 2,)
-            pygame.draw.line(screen,'green',start,end2)
-            pygame.draw.circle(screen, 'green', end2, 2,)
-          
+            pygame.draw.line(screen,'orange',start,end1,2)
+            force_1=pygame.Vector2(end1[0]-start[0],end1[1]-start[1])
+            angle1=force_1.angle_to(x_versor)
+            screen.blit(self._draw_arrow_head(10,angle1,'orange'),(end1[0]-5,end1[1]-5))
+            
+            
+            
+            pygame.draw.line(screen,'orange',start,end2,2)
+            force_2=pygame.Vector2(end2[0]-start[0],end2[1]-start[1])
+            angle2=force_2.angle_to(x_versor)
+            screen.blit(self._draw_arrow_head(10,angle2,'orange'),(end2[0]-5,end2[1]-5))
+            
+            
+            
     def get_bead_anchor(self,mouse_pos):
         
         

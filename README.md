@@ -148,10 +148,10 @@ picture=images/pink_dog.png
 * __resolution__ Resolution, in dpi, of matplotlib graphs
 * __height__ Height of matplotlib graphs
 * __rendering_mode__ Use RGBX for maximum performance
-* __beads_radius__ Beads circle plot beads_radius
+* __beads_radius__ Beads circle plot
 * __screenx__ Simulation x size
 * __screeny__ Simulation y size
 * __vertical_fraction__ Space reserved for graphs
 * __file__ Font file
 * __size__ Font size
-* __picture__ Observer picture in png format
+* __picture__ Observer picture in png format, width 120px
