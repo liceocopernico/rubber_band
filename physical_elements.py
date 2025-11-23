@@ -526,9 +526,12 @@ class rubber_band:
 
 class moving_observer:
     def __init__(self,position: pygame.Vector2,path_length,max_disp,rubber_band: rubber_band):
+        self.config = configparser.ConfigParser()
+        current_path=os.path.dirname(os.path.realpath(__file__))
+        self.config.read(current_path+"/config.ini")
         self.position=position
         self.speed=rubber_band.get_wave_speed()
-        self.observer = pygame.image.load('images/green_medium.png')
+        self.observer = pygame.image.load(self.config['observer']['picture'])
         self.observer_size=self.observer.get_size()
         self.path_length=path_length
         self.max_disp=max_disp

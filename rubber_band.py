@@ -28,10 +28,6 @@ graph_size=(screen_x,int(config['graphs']['height'])*int(config['graphs']['resol
 fps=int(config['rubber_band']['fps'])
 
 
-
-
-
-
 pygame.init()
 
 screen = pygame.display.set_mode((screen_x, screen_y))
