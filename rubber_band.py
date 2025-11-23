@@ -13,15 +13,24 @@ from pygame_widgets.button import Button
 from event_manager import Notifier
 
 
-screen_x=1500
-screen_y=1200
 
 config = configparser.ConfigParser()
 current_path=os.path.dirname(os.path.realpath(__file__))
 config.read(current_path+"/config.ini")
+
+
+
+
+screen_x=int(config['screen']['screenx'])
+screen_y=int(config['screen']['screeny'])
+
+
+
 fig = pylab.figure(figsize=[int(screen_x/int(config['graphs']['resolution'])),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
 graph_size=(screen_x,int(config['graphs']['height'])*int(config['graphs']['resolution']))
 fps=int(config['rubber_band']['fps'])
+
+
 
 
 
@@ -33,12 +42,11 @@ pygame.display.set_caption("Rubber band simulation")
 clock = pygame.time.Clock()
 
 dt =1/float(config['rubber_band']['fps'])*float(config['rubber_band']['gamma'])
+
 pygame.font.init() 
+
+
 sim_font = pygame.freetype.Font("Lato_Heavy.ttf", 18)
-
-
-
-
 
 
 
@@ -52,7 +60,8 @@ str_spring=rubber_band(float(config['rubber_band']['length']),
 
 observer=movingObserver(pygame.Vector2(0,0),
                         float(config['rubber_band']['length']),
-                        float(config['rubber_band']['max_disp']))
+                        float(config['rubber_band']['max_disp']),
+                        str_spring)
 
 
 
@@ -75,6 +84,7 @@ wave_speed=str_spring.get_wave_speed()
 observer.speed=wave_speed
 
 notifier=Notifier()
+
 def quit_simulation():
     pygame.quit()
     quit()
@@ -102,9 +112,9 @@ while True:
     
     
    
-    sim_font.render_to(screen, (0, 0), f"dt {dt}  time {round(str_spring.state['time'],4)}  speed {round(wave_speed,4)}   frames {str_spring.state['frames']}", (0, 0, 0))
+    sim_font.render_to(screen, (10, 20), f"dt {dt}  time {round(str_spring.state['time'],4)}  speed {round(wave_speed,4)}   frames {str_spring.state['frames']}", (0, 0, 0))
+    sim_font.render_to(screen, (10, 40), f"Kinetic Energy: {str_spring.T} potential energy {str_spring.U} total energy {str_spring.T+str_spring.U}" ,(240,120,100))
     
-    observer.draw_observer(screen)
     str_spring.compute_forces_accel()
     str_spring.compute_velocity(dt)
     str_spring.compute_position(dt)
@@ -113,6 +123,8 @@ while True:
     str_spring.draw_beads(screen)
     str_spring.draw_time_domain(screen,fig,dt,graph_size, config['graphs']['rendering_mode'],screen_y)
     str_spring.draw_fft(screen,fig,dt,graph_size, config['graphs']['rendering_mode'],screen_y)
+    
+    observer.draw_observer(screen)
     observer.update_observer_position(dt)
   
   

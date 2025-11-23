@@ -17,7 +17,7 @@ class Notifier:
         return subscribers if subscribers else []
 
     def subscribe(self, event, subscriber):
-        """ Can be turned into a decorator but gets really complicated """
+     
         subscribers = self._subscribers.get(event)
         if subscribers:
             subscribers.append(subscriber)
