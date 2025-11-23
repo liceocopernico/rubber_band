@@ -32,7 +32,7 @@ class bead:
         self.position=position
         self.velocity=pygame.Vector2(0,0)
         self.r = r
-        self.color = "blue"
+        self._color = "blue"
         self.mass=mass
         self.rectangle=pygame.Rect(0,0,0,0)
         self.T=0.0
@@ -41,7 +41,7 @@ class bead:
     def draw(self,screen,screen_size,length,max_disp):        
         screen_position=(self.position.x/length*screen_size[0],screen_size[1]/2-self.position.y/max_disp*screen_size[1])
         self.rectangle=pygame.Rect(screen_position[0]-self.r,screen_position[1]-self.r,2*self.r,2*self.r)
-        pygame.draw.circle(screen, self.color, screen_position, self.r,)
+        pygame.draw.circle(screen, self._color, screen_position, self.r,)
     
     def get_collision(self,pos):
         if self.rectangle.collidepoint(pos):
@@ -52,8 +52,10 @@ class bead:
         
     def set_potential_energy(self,g):
         self.U=self.mass*g*self.position.y
+      
+    def set_bead_color(self,color):    
+        self._color=color
         
-
 class rubber_band:
     def __init__(self,length,mass,N,cross_section,y_mod,max_disp):
         
@@ -70,7 +72,7 @@ class rubber_band:
         self.y_mod=y_mod
         self.beads=[]
         self.forces=[]
-        self.mid_position=[] 
+        self.probe_bead=int(self.N/2)
         self.g=float(self.config['environment']['g'])   
         self.w_size=int(self.config['fft']['window_size'])
         self.v_fraction=float(self.config['drawing']['vertical_fraction'])
@@ -100,6 +102,7 @@ class rubber_band:
         self.state=self._set_init_state()
         self.T=0.0
         self.U=self.get_potential_energy()
+        self.beads[self.probe_bead].set_bead_color('red')
         
         
     def get_physics_data(self):
@@ -145,14 +148,19 @@ class rubber_band:
                     case pygame.K_r:
                         self.reset()
                     case pygame.K_a:
-                        self.set_n_armonic(1,0.25)
+                        self.set_n_harmonic(1,0.25)
                     case pygame.K_b:
                         self.set_impulse1()
                     case pygame.K_c:
-                        self.set_n_armonic(5,0.25)
+                        self.set_n_harmonic(5,0.25)
                     case pygame.K_x:
-                        self.state['armonic']+=1
-                        self.set_n_armonic(self.state['armonic'],0.25)
+                        self.state['harmonic']+=1
+                        self.set_n_harmonic(self.state['harmonic'],0.25)
+                    case pygame.K_z:
+                        self.state['hharmonic']-=1
+                        if self.state['hharmonic']<1:
+                            self.state['hharmonic']=1
+                        self.set_n_hharmonic(self.state['hharmonic'],0.25)
                     case pygame.K_l:
                         self.state['freq_domain']= not self.state['freq_domain']
                         self.state['time_domain'] =False
@@ -165,13 +173,9 @@ class rubber_band:
                         self.state['max_freq']+=0.1*self.get_zeroth_freq()
                     case pygame.K_k:
                         self.state['max_freq']-=0.1*self.get_zeroth_freq()
-                    case pygame.K_z:
-                        self.state['armonic']-=1
-                        if self.state['armonic']<1:
-                            self.state['armonic']=1
-                        self.set_n_armonic(self.state['armonic'],0.25)
+                    
                     case pygame.K_o:
-                        self.set_n_m_armonic(3,7)
+                        self.set_n_m_hharmonic(3,7)
                     case pygame.K_e:
                         self.state['connected']= not self.state['connected']
                         
@@ -184,6 +188,17 @@ class rubber_band:
                         self.state['force_scale']*=2                   
                         if self.state['force_scale']>2:
                             self.state['force_scale']=1 
+                    case pygame.K_LEFT:
+                        self.beads[self.probe_bead].set_bead_color('blue')
+                        self.probe_bead-=1
+                        if self.probe_bead<0:
+                            self.probe_bead=0
+                        self.beads[self.probe_bead].set_bead_color('red')
+                    case pygame.K_RIGHT:
+                        self.beads[self.probe_bead].set_bead_color('blue')
+                        self.probe_bead+=1
+                        self.probe_bead=self.probe_bead%(self.N-1)
+                        self.beads[self.probe_bead].set_bead_color('red')
     
     def _set_init_state(self):
         state={'frames':0,
@@ -192,7 +207,7 @@ class rubber_band:
                'time_domain':False,
                'time':0.0,
                'evolution':False,
-               'armonic':1,
+               'harmonic':1,
                'connected':False,
                'beads':True,
                'force_scale':1.0,
@@ -283,13 +298,13 @@ class rubber_band:
         if self.surf:
             screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
                           
-    def set_n_armonic(self,n,an):
+    def set_n_harmonic(self,n,an):
         for i in range(self.N-1):
             x_pos=(i+1)*self.length/self.N
             self.beads[i].position=pygame.Vector2(x_pos,an*self.max_disp*math.sin(n*math.pi/self.length*x_pos)    )
         self.update_band_U()
 
-    def set_n_m_armonic(self,n,m):
+    def set_n_m_harmonic(self,n,m):
         an=1.0/math.sqrt(2)*0.25
         
         for i in range(self.N-1):
@@ -394,7 +409,7 @@ class rubber_band:
             return
         for i in range(self.N-1):
             self.beads[i].position+=self.beads[i].velocity*self.dt
-        self.time_series.enqueue(self.beads[int(self.N/2)].position.y)
+        self.time_series.enqueue(self.beads[self.probe_bead].position.y)
         self.state['time']+=self.dt
         self.state['frames']+=1
         if self.state['frames']%100==0:
