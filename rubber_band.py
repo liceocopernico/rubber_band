@@ -86,11 +86,9 @@ while True:
     
     
     notifier.dispatch(pygame.event.get(),screen)
+    
     screen.fill("white")
-    
-
-
-    
+        
     str_spring.compute_forces_accel()
     str_spring.compute_velocity()
     str_spring.compute_position()

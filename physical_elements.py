@@ -38,8 +38,13 @@ class bead:
         self.T=0.0
         self.U=0.0
         
-    def draw(self,screen,screen_size,length,max_disp):        
-        screen_position=(self.position.x/length*screen_size[0],screen_size[1]/2-self.position.y/max_disp*screen_size[1])
+    def draw(self,screen,screen_size,length,max_disp,real):
+        if real:
+            scale=max_disp/length
+        else:
+            scale=1
+            
+        screen_position=(self.position.x/length*screen_size[0],screen_size[1]/2-self.position.y/max_disp*screen_size[1]*scale)
         self.rectangle=pygame.Rect(screen_position[0]-self.r,screen_position[1]-self.r,2*self.r,2*self.r)
         pygame.draw.circle(screen, self._color, screen_position, self.r,)
     
@@ -88,7 +93,7 @@ class rubber_band:
         self.anchor=None
         self.surf=None
         self.dt =1/float(self.config['rubber_band']['fps'])*float(self.config['rubber_band']['gamma'])
-               
+        self.real_scale=False     
         
         for i in range(N):
             self.springs.append(spring(length/N,self.rest_stretch,self.k_spring,self.damping))
@@ -199,6 +204,8 @@ class rubber_band:
                         self.probe_bead+=1
                         self.probe_bead=self.probe_bead%(self.N-1)
                         self.beads[self.probe_bead].set_bead_color('red')
+                    case pygame.K_y:
+                        self.real_scale= not self.real_scale 
     
     def _set_init_state(self):
         state={'frames':0,
@@ -439,7 +446,13 @@ class rubber_band:
         self.T=self.get_kinetic_energy()
            
     def _translate_pixel(self,position,screen_size,length,max_disp):
-        screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
+        
+        if self.real_scale:
+            scale=self.max_disp/self.length
+        else:
+            scale=1
+        
+        screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1]*scale)
         return screen_position
 
     def move_bead(self,bead_index,mouse_pos,screen):
@@ -454,9 +467,14 @@ class rubber_band:
         self.beads[bead_index].position=system_position
            
     def draw_connected_beads(self,screen):
+        
+        
         if not self.state['connected']:
             return
         screen_size=self._get_simulation_size(screen)        
+        
+        
+        
         for i in range(self.N):
             if i==0:
                 pass
@@ -476,7 +494,7 @@ class rubber_band:
             return
         screen_size=self._get_simulation_size(screen)
         for bead in self.beads:
-            bead.draw(screen,screen_size,self.length,self.max_disp)
+            bead.draw(screen,screen_size,self.length,self.max_disp,self.real_scale)
     
     def get_bead_dynamics(self,i):
         return (self.beads[i].position,self.beads[i].velocity,self.accelerations[i])
