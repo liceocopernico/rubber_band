@@ -64,8 +64,10 @@ class rubber_band:
         self.mass=mass
         self.N=N
         self.bead_mass=mass/N
+        self.cross_section=cross_section
         k_total=cross_section*y_mod/length
         self.k_spring=N*k_total
+        self.y_mod=y_mod
         self.beads=[]
         self.forces=[]
         self.mid_position=[] 
@@ -82,17 +84,15 @@ class rubber_band:
         self.right=pygame.Vector2(length,0)
         self.rest_stretch=float(self.config['rubber_band']['rest_stretch'])
         self.anchor=None
-        
         self.surf=None
-        
-        
-        
+        self.dt =1/float(self.config['rubber_band']['fps'])*float(self.config['rubber_band']['gamma'])
+               
         
         for i in range(N):
             self.springs.append(spring(length/N,self.rest_stretch,self.k_spring,self.damping))
         for i in range(N-1):
             pos=pygame.Vector2((i+1)*length/N,0)
-            self.beads.append(bead(pos,3,self.bead_mass))
+            self.beads.append(bead(pos,int(self.config['graphs']['beads_radius']),self.bead_mass))
         for i in range(N-1):
             self.accelerations.append(pygame.Vector2(0,0))
             self.forces.append(pygame.Vector2(0,0))
@@ -102,7 +102,23 @@ class rubber_band:
         self.U=self.get_potential_energy()
         
         
-   
+    def get_physics_data(self):
+        data={  'time':["Time",round(self.state['time'],8),"s"],
+                'frames':["Frames",self.state['frames'],""],
+                'kinetic_energy':["Kinetic energy",round(self.T,8),"J"],
+                'potential_energy':["Potential energy",round(self.U,8),"J"],
+                'total_energy':["Total energy",round(self.T+self.U,8),"J"],
+                'wave_speed':["Wave speed",round(self.get_wave_speed(),8),"m/s"],
+                'friction':["Viscous friction coefficient",self.damping,"kg/s"],
+                'mass':["Mass",self.mass,"kg"],
+                'cross_section':["Cross section",self.cross_section,"m^2"],
+                'length':["Length",self.length,"m"],
+                'young_modulus':["Young modulus",self.y_mod,"Pa"],
+                'g_field':["Gravity field modulus",self.g,"m/s^2"],
+                'max_disp':["Max vertical displacement",self.max_disp,"m"]
+        }
+        return data
+        
    
     def handle_event(self,event,screen):
         match event.type:
@@ -185,9 +201,9 @@ class rubber_band:
                }
         return state
     
-    def _get_wave_fft(self,dt):
+    def _get_wave_fft(self):
             
-        sampling_rate=round(1/dt)
+        sampling_rate=round(1/self.dt)
         np_amplitudes=self.time_series.to_array()
         f_domain=fft(np_amplitudes)
         N=len(f_domain)
@@ -205,7 +221,6 @@ class rubber_band:
         base_freq=self.get_wave_speed()/(2*self.length)
         return base_freq
 
-
     def get_potential_energy(self):
         energy=0
         for spring in self.springs:
@@ -220,8 +235,7 @@ class rubber_band:
             energy+=bead.T
         return energy
     
-    
-    def draw_time_domain(self,screen,figure,dt,graph_size,rendering_mode,screen_y):
+    def draw_time_domain(self,screen,figure,graph_size,rendering_mode,screen_y):
         
         if not self.state['time_domain'] or not self.state['evolution']:
             return
@@ -231,7 +245,7 @@ class rubber_band:
             np_amplitudes=self.time_series.to_array()
             N=len(np_amplitudes)
             n = np.arange(N)
-            t=n*dt
+            t=n*self.dt
             axis=figure.gca()
             axis.plot(t,np_amplitudes)
             matplotlib.pyplot.ylabel('Amplitude (m)')
@@ -246,16 +260,15 @@ class rubber_band:
         
         if self.surf:
             screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
-        
-       
-    def draw_fft(self,screen,figure,dt,graph_size,rendering_mode,screen_y):
+          
+    def draw_fft(self,screen,figure,graph_size,rendering_mode,screen_y):
         if not self.state['freq_domain'] or not self.state['evolution']:
             return
         
         if self.state['frames']%100==0:
             
             figure.clear()
-            data=self._get_wave_fft(dt)
+            data=self._get_wave_fft(self.dt)
             axis=figure.gca()
             axis.plot(data[0],data[1])
             matplotlib.pyplot.xlim(0,self.state['max_freq'])
@@ -269,8 +282,7 @@ class rubber_band:
             screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
         if self.surf:
             screen.blit(self.surf, (-0.9*int(self.config['graphs']['resolution']),screen_y-graph_size[1]))
-        
-                  
+                          
     def set_n_armonic(self,n,an):
         for i in range(self.N-1):
             x_pos=(i+1)*self.length/self.N
@@ -288,6 +300,7 @@ class rubber_band:
             x_pos=(i+1)*self.length/self.N
             self.beads[i].position.y+=2*an*self.max_disp*math.sin(m*math.pi/self.length*x_pos) 
         self.update_band_U()
+        
     def set_impulse1(self):
         for i in range(int(self.N/10)):
             x_pos=(i+1)*self.length/self.N
@@ -370,19 +383,19 @@ class rubber_band:
                self.accelerations[i]=accelleration
                self.forces[i]=force
 
-    def compute_velocity(self,dt):
+    def compute_velocity(self):
         if not self.state['evolution']:
             return
         for i in range(self.N-1):
-            self.beads[i].velocity+=self.accelerations[i]*dt
+            self.beads[i].velocity+=self.accelerations[i]*self.dt
     
-    def compute_position(self,dt):
+    def compute_position(self):
         if not self.state['evolution']:
             return
         for i in range(self.N-1):
-            self.beads[i].position+=self.beads[i].velocity*dt
+            self.beads[i].position+=self.beads[i].velocity*self.dt
         self.time_series.enqueue(self.beads[int(self.N/2)].position.y)
-        self.state['time']+=dt
+        self.state['time']+=self.dt
         self.state['frames']+=1
         if self.state['frames']%100==0:
             self.U=self.get_potential_energy()
@@ -409,8 +422,7 @@ class rubber_band:
         for i in range(len(self.beads)):
             self.beads[i].set_kinetic_energy()
         self.T=self.get_kinetic_energy()
-        
-         
+           
     def _translate_pixel(self,position,screen_size,length,max_disp):
         screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
         return screen_position
@@ -485,7 +497,7 @@ class rubber_band:
 class movingObserver:
     def __init__(self,position: pygame.Vector2,path_length,max_disp,rubber_band: rubber_band):
         self.position=position
-        self.speed=0.0
+        self.speed=rubber_band.get_wave_speed()
         self.observer = pygame.image.load('images/green_medium.png')
         self.observer_size=self.observer.get_size()
         self.path_length=path_length
@@ -493,7 +505,7 @@ class movingObserver:
         self.place_observer=False
         self.observer_placed=False
         self.rubber_band=rubber_band
-        
+        self.dt=rubber_band.dt
         
     def _translate_pixel(self,position,screen_size,length,max_disp):
         screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
@@ -528,11 +540,11 @@ class movingObserver:
         self.position=observer_position
         
         
-    def update_observer_position(self,dt):
+    def update_observer_position(self):
         if not self.rubber_band.state['evolution']:
             return
         
-        self.position.x+=self.speed*dt
+        self.position.x+=self.speed*self.dt
         if self.position.x>self.path_length:
             self.speed=-self.speed
             self.position.x=self.path_length
