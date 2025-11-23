@@ -129,6 +129,8 @@ screeny=1200
 file=Lato_Heavy.ttf
 size=15
 
+[observer]
+picture=images/pink_dog.png
 
 ```
 * __g__ Local gravitational field magnitude
@@ -152,3 +154,4 @@ size=15
 * __vertical_fraction__ Space reserved for graphs
 * __file__ Font file
 * __size__ Font size
+* __picture__ Observer picture in png format
