@@ -1,5 +1,5 @@
-# rubber_band
-A very simple rubber band simulation without using PDE
+# Rubber band
+A very simple rubber band simulation without explicitly using PDE
 
 
 
@@ -7,15 +7,27 @@ A very simple rubber band simulation without using PDE
 
 Install UV python virtual environment manager:
 
-```
 
-Debian and Ubuntu
+__Debian and Ubuntu__
+
+```
 
 apt install pipx
 
 pipx install uv
 
 ```
+
+__windows and Mac OsX__
+
+```
+You are on your own :)
+
+```
+
+
+
+
 
 clone repository into a directory of your choice, I chose ~/tmp/projects
 
