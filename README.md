@@ -111,6 +111,7 @@ cross_section=0.0000032
 length=0.5
 mass=0.1
 max_disp=0.01
+colors=black orange
 
 [graphs]
 resolution=100
@@ -145,6 +146,7 @@ picture=images/pink_dog.png
 * __length__ Rubber band length
 * __mass__ Rubber band mass
 * __max_disp__ Max vertical displacement of beads
+* __colors__ Alternating beads colors
 * __resolution__ Resolution, in dpi, of matplotlib graphs
 * __height__ Height of matplotlib graphs
 * __rendering_mode__ Use RGBX for maximum performance
