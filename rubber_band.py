@@ -65,11 +65,12 @@ notifier.subscribe(pygame.QUIT,quit_simulation)
 notifier.subscribe(pygame.MOUSEBUTTONDOWN,observer)
 notifier.subscribe(pygame.KEYUP,observer)
 notifier.subscribe(pygame.MOUSEMOTION,observer)
-
+notifier.subscribe(pygame.MOUSEWHEEL,observer)
 notifier.subscribe(pygame.MOUSEBUTTONUP,str_spring)
 notifier.subscribe(pygame.MOUSEMOTION,str_spring)
 notifier.subscribe(pygame.MOUSEBUTTONDOWN,str_spring)
 notifier.subscribe(pygame.KEYUP,str_spring)
+notifier.subscribe(pygame.MOUSEWHEEL,str_spring)
 
 
 informations.subscribe(str_spring)

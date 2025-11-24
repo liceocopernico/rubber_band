@@ -106,7 +106,7 @@ class rubber_band:
         self.dt =1/float(self.config['rubber_band']['fps'])*float(self.config['rubber_band']['gamma'])
         self.real_scale=False     
         self.bead_colors=self.config['rubber_band']['colors'].split()
-        
+        self._beads_radius=int(self.config['graphs']['beads_radius'])
         
         for i in range(N):
             self.springs.append(spring(length/N,self.rest_stretch,self.k_spring,self.damping))
@@ -125,6 +125,7 @@ class rubber_band:
         
     def get_physics_data(self):
         data={  'time':["Time",round(self.state['time'],8),"s"],
+                'dt':["dt",round(self.dt,10),"s"],
                 'frames':["Frames",self.state['frames'],""],
                 'kinetic_energy':["Kinetic energy",round(self.T,8),"J"],
                 'potential_energy':["Potential energy",round(self.U,8),"J"],
@@ -142,6 +143,14 @@ class rubber_band:
       
     def handle_event(self,event,screen):
         match event.type:
+            case pygame.MOUSEWHEEL:
+                if event.y==1:
+                    self._beads_radius+=1
+                    self._resize_beads()
+                elif event.y==-1:
+                    self._beads_radius-=1
+                    self.beads_radius=max(1,self._beads_radius)
+                    self._resize_beads()
             case pygame.MOUSEBUTTONDOWN:
                 if event.button==1:
                     self.anchor=self.get_bead_anchor(event.pos)
@@ -250,6 +259,10 @@ class rubber_band:
         actual_size=pygame.display.get_window_size()
         screen_size=(actual_size[0],round(actual_size[1]*self.v_fraction))  
         return screen_size
+ 
+    def _resize_beads(self):
+        for bead in self.beads:
+            bead.r=self._beads_radius
  
     def get_zeroth_freq(self):
         base_freq=self.get_wave_speed()/(2*self.length)
@@ -572,8 +585,12 @@ class moving_observer:
         self.config.read(current_path+"/config.ini")
         self.position=position
         self.speed=rubber_band.get_wave_speed()
-        self.observer = pygame.image.load(self.config['observer']['picture'])
-        self.observer_size=self.observer.get_size()
+        
+        self._av_observers=self.config['observer']['picture'].split(',')
+        self.observer=self._av_observers[0]
+        
+        self._observer_image = pygame.image.load(f"images/{self.observer}")
+        self.observer_size=self._observer_image.get_size()
         self.path_length=path_length
         self.max_disp=max_disp
         self.place_observer=False
@@ -616,7 +633,18 @@ class moving_observer:
                 if event.button==1 and self.place_observer:
                     self.place_observer=False
                     self.observer_placed=True
-            
+            case pygame.MOUSEWHEEL:
+                if event.x==1 or event.x==-1:
+                    self._change_observer_image(event.x)
+    
+    def _change_observer_image(self,inc):
+        n_observers=len(self._av_observers)
+        current_index=self._av_observers.index(self.observer)
+        current_index+=inc
+        current_index=current_index%n_observers
+        self.observer=self._av_observers[current_index]
+        self._observer_image = pygame.image.load(f"images/{self.observer}")
+        
     def set_observer_position_from_pixel(self,screen,mouse_pos):
         
         screen_size=self._get_simulation_size(screen)
@@ -647,7 +675,7 @@ class moving_observer:
             else:
                 screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
             
-            screen.blit(self.observer,screen_position)
+            screen.blit(self._observer_image,screen_position)
             
     def render_rubber_band(self,screen):
         if self.spov:

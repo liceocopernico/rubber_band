@@ -88,6 +88,10 @@ uv run rubber_band.py
 * __observer__ You can move the wave observer around with your mouse
 
 
+# Mouse buttons and wheels
+
+* __center_wheel__ Rotate center wheel to increase/decrease beads radius
+* __left_wheel__ Rotate wheel to change observer icon
 
 # Configuration file
 
