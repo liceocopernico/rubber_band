@@ -80,7 +80,7 @@ uv run rubber_band.py
 * __right arrow__ move probe bead right
 * __w__ place moving observer
 * __y__ toggle real y scale
-
+* __v__ toggle moving observer point of view
 
 # Mouse interaction
 

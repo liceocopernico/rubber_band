@@ -28,11 +28,11 @@ class spring:
          return self.U   
    
 class bead:
-    def __init__(self, position, r,mass):
+    def __init__(self, position, r,mass,color):
         self.position=position
         self.velocity=pygame.Vector2(0,0)
         self.r = r
-        self._color = "blue"
+        self._color = color
         self.mass=mass
         self.rectangle=pygame.Rect(0,0,0,0)
         self.T=0.0
@@ -47,6 +47,17 @@ class bead:
         screen_position=(self.position.x/length*screen_size[0],screen_size[1]/2-self.position.y/max_disp*screen_size[1]*scale)
         self.rectangle=pygame.Rect(screen_position[0]-self.r,screen_position[1]-self.r,2*self.r,2*self.r)
         pygame.draw.circle(screen, self._color, screen_position, self.r,)
+    
+    def draw_arbitrary_rf(self,screen,screen_size,length,max_disp,real,rf_origin):
+        if real:
+            scale=max_disp/length
+        else:
+            scale=1
+            
+        screen_position=((self.position.x-rf_origin.x)/length*screen_size[0],screen_size[1]/2-(self.position.y-rf_origin.y)/max_disp*screen_size[1]*scale)
+        self.rectangle=pygame.Rect(screen_position[0]-self.r,screen_position[1]-self.r,2*self.r,2*self.r)
+        pygame.draw.circle(screen, self._color, screen_position, self.r,)
+    
     
     def get_collision(self,pos):
         if self.rectangle.collidepoint(pos):
@@ -94,12 +105,14 @@ class rubber_band:
         self.surf=None
         self.dt =1/float(self.config['rubber_band']['fps'])*float(self.config['rubber_band']['gamma'])
         self.real_scale=False     
+        self.bead_colors=self.config['rubber_band']['colors'].split()
+        
         
         for i in range(N):
             self.springs.append(spring(length/N,self.rest_stretch,self.k_spring,self.damping))
         for i in range(N-1):
             pos=pygame.Vector2((i+1)*length/N,0)
-            self.beads.append(bead(pos,int(self.config['graphs']['beads_radius']),self.bead_mass))
+            self.beads.append(bead(pos,int(self.config['graphs']['beads_radius']),self.bead_mass,self.bead_colors[i%2]))
         for i in range(N-1):
             self.accelerations.append(pygame.Vector2(0,0))
             self.forces.append(pygame.Vector2(0,0))
@@ -126,8 +139,7 @@ class rubber_band:
                 'max_disp':["Max vertical displacement",self.max_disp,"m"]
         }
         return data
-        
-   
+      
     def handle_event(self,event,screen):
         match event.type:
             case pygame.MOUSEBUTTONDOWN:
@@ -324,9 +336,10 @@ class rubber_band:
         self.update_band_U()
         
     def set_impulse1(self):
-        for i in range(int(self.N/10)):
+        for i in range(self.N-1):
             x_pos=(i+1)*self.length/self.N
-            self.beads[i].position=pygame.Vector2(x_pos,0.25*self.max_disp*math.sin(10*math.pi/self.length*x_pos)    )
+            if i>int(self.N/5) and i< 1.5*int(self.N/5):
+                self.beads[i].position=pygame.Vector2(x_pos,0.25*self.max_disp*math.sin(10*math.pi/self.length*x_pos)    )
         self.update_band_U()
         
     def reset(self):
@@ -496,6 +509,14 @@ class rubber_band:
         for bead in self.beads:
             bead.draw(screen,screen_size,self.length,self.max_disp,self.real_scale)
     
+    def draw_beads_arbitrary_rf(self,screen,rf_origin):
+        if not self.state['beads']:
+            return
+        screen_size=self._get_simulation_size(screen)
+        for bead in self.beads:
+            bead.draw_arbitrary_rf(screen,screen_size,self.length,self.max_disp,self.real_scale,rf_origin)
+        
+    
     def get_bead_dynamics(self,i):
         return (self.beads[i].position,self.beads[i].velocity,self.accelerations[i])
     
@@ -513,9 +534,6 @@ class rubber_band:
             return
         
         x_versor=pygame.Vector2(1,0)
-        
-        
-        
         screen_size=self._get_simulation_size(screen)
         scale=self.state['force_scale']
         mean_spring_length=self.length/self.N
@@ -538,8 +556,6 @@ class rubber_band:
             force_2=pygame.Vector2(end2[0]-start[0],end2[1]-start[1])
             angle2=force_2.angle_to(x_versor)
             screen.blit(self._draw_arrow_head(10,angle2,'orange'),(end2[0]-5,end2[1]-5))
-            
-            
             
     def get_bead_anchor(self,mouse_pos):
         
@@ -564,6 +580,9 @@ class moving_observer:
         self.observer_placed=False
         self.rubber_band=rubber_band
         self.dt=rubber_band.dt
+        self.rf_origin=pygame.Vector2(0.0,0.0)
+        self.spov=False
+        self.initial_observer_pos=pygame.Vector2(0.0,0.0)
         
     def _translate_pixel(self,position,screen_size,length,max_disp):
         screen_position=(position.x/length*screen_size[0],screen_size[1]/2-position.y/max_disp*screen_size[1])
@@ -577,15 +596,24 @@ class moving_observer:
     def handle_event(self,event,screen):
         match event.type:
             case pygame.KEYUP:
-                if event.key==pygame.K_w:
-                    self.place_observer=True
-                    self.observer_placed=False
-                    print("Place observer")
+                
+                match event.key:
+                    case pygame.K_w:
+                        self.place_observer=True
+                        self.observer_placed=False
+                        print("Place observer")
+                    case pygame.K_r:
+                        self.place_observer=False
+                        self.observer_placed=False  
+                        self.spov=False 
+                    case pygame.K_v:
+                        self.spov= not self.spov
+                           
             case pygame.MOUSEMOTION:
                 if self.place_observer:
                     self.set_observer_position_from_pixel(screen,event.pos)
             case pygame.MOUSEBUTTONDOWN:
-                if event.button==1:
+                if event.button==1 and self.place_observer:
                     self.place_observer=False
                     self.observer_placed=True
             
@@ -596,7 +624,7 @@ class moving_observer:
         new_x_pos=( mouse_pos[0]-self.observer_size[0]*0.5)/screen_size[0]*self.path_length
         observer_position=pygame.Vector2(new_x_pos,new_y_pos)
         self.position=observer_position
-        
+        self.initial_observer_pos=pygame.Vector2(new_x_pos,new_y_pos)
         
     def update_observer_position(self):
         if not self.rubber_band.state['evolution']:
@@ -612,6 +640,18 @@ class moving_observer:
     
     def draw_observer(self,screen):
         if self.place_observer or self.observer_placed:
+            
             screen_size=self._get_simulation_size(screen) 
-            screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
+            if self.spov:
+                screen_position=self._translate_pixel(self.initial_observer_pos,screen_size,self.path_length,self.max_disp)
+            else:
+                screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
+            
             screen.blit(self.observer,screen_position)
+            
+    def render_rubber_band(self,screen):
+        if self.spov:
+            self.rubber_band.draw_beads_arbitrary_rf(screen,pygame.Vector2(self.position.x-self.initial_observer_pos.x,0.0))
+        else:
+            self.rubber_band.draw_beads_arbitrary_rf(screen,self.rf_origin)
+        

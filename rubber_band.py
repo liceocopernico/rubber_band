@@ -90,8 +90,8 @@ while True:
     str_spring.draw_fft(screen,fig,graph_size, config['graphs']['rendering_mode'],screen_y)
     str_spring.draw_forces(screen)
     str_spring.draw_connected_beads(screen)
-    str_spring.draw_beads(screen)
     
+    observer.render_rubber_band(screen)
     
     
     observer.draw_observer(screen)
