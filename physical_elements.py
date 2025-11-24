@@ -434,8 +434,8 @@ class rubber_band:
        
         for i in range(self.N-1):
                force=self.compute_force(i)
-               accelleration=force[0]/self.beads[i].mass
-               self.accelerations[i]=accelleration
+               acceleration=force[0]/self.beads[i].mass
+               self.accelerations[i]=acceleration
                self.forces[i]=force
 
     def compute_velocity(self):
