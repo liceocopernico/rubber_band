@@ -28,7 +28,7 @@ class spring:
          return self.U   
    
 class bead:
-    def __init__(self, position, r,mass,color):
+    def __init__(self, position, r,mass,color,width):
         self.position=position
         self.velocity=pygame.Vector2(0,0)
         self.r = r
@@ -37,6 +37,7 @@ class bead:
         self.rectangle=pygame.Rect(0,0,0,0)
         self.T=0.0
         self.U=0.0
+        self.border=width
         
     def draw(self,screen,screen_size,length,max_disp,real):
         if real:
@@ -46,7 +47,7 @@ class bead:
             
         screen_position=(self.position.x/length*screen_size[0],screen_size[1]/2-self.position.y/max_disp*screen_size[1]*scale)
         self.rectangle=pygame.Rect(screen_position[0]-self.r,screen_position[1]-self.r,2*self.r,2*self.r)
-        pygame.draw.circle(screen, self._color, screen_position, self.r,)
+        pygame.draw.circle(screen, self._color, screen_position, self.r,self.border)
     
     def draw_arbitrary_rf(self,screen,screen_size,length,max_disp,real,rf_origin):
         if real:
@@ -56,7 +57,7 @@ class bead:
             
         screen_position=((self.position.x-rf_origin.x)/length*screen_size[0],screen_size[1]/2-(self.position.y-rf_origin.y)/max_disp*screen_size[1]*scale)
         self.rectangle=pygame.Rect(screen_position[0]-self.r,screen_position[1]-self.r,2*self.r,2*self.r)
-        pygame.draw.circle(screen, self._color, screen_position, self.r,)
+        pygame.draw.circle(screen, self._color, screen_position, self.r,self.border)
     
     
     def get_collision(self,pos):
@@ -112,7 +113,7 @@ class rubber_band:
             self.springs.append(spring(length/N,self.rest_stretch,self.k_spring,self.damping))
         for i in range(N-1):
             pos=pygame.Vector2((i+1)*length/N,0)
-            self.beads.append(bead(pos,int(self.config['graphs']['beads_radius']),self.bead_mass,self.bead_colors[i%2]))
+            self.beads.append(bead(pos,int(self.config['graphs']['beads_radius']),self.bead_mass,self.bead_colors[i%2],int(self.config['graphs']['bead_border'])))
         for i in range(N-1):
             self.accelerations.append(pygame.Vector2(0,0))
             self.forces.append(pygame.Vector2(0,0))
@@ -120,8 +121,9 @@ class rubber_band:
         self.state=self._set_init_state()
         self.T=0.0
         self.U=self.get_potential_energy()
-        self.beads[self.probe_bead].set_bead_color('red')
-        
+        self.beads[self.probe_bead].set_bead_color(self.config['graphs']['probe_bead_color'])
+        self.beads[self.probe_bead].r=int(self.config['graphs']['probe_bead_radius'])
+        self.beads[self.probe_bead].border=int(self.config['graphs']['probe_bead_border'])
         
     def get_physics_data(self):
         data={  'time':["Time",round(self.state['time'],8),"s"],
@@ -145,12 +147,9 @@ class rubber_band:
         match event.type:
             case pygame.MOUSEWHEEL:
                 if event.y==1:
-                    self._beads_radius+=1
-                    self._resize_beads()
+                    self._resize_beads(event.y)
                 elif event.y==-1:
-                    self._beads_radius-=1
-                    self.beads_radius=max(1,self._beads_radius)
-                    self._resize_beads()
+                    self._resize_beads(event.y)
             case pygame.MOUSEBUTTONDOWN:
                 if event.button==1:
                     self.anchor=self.get_bead_anchor(event.pos)
@@ -215,18 +214,25 @@ class rubber_band:
                         if self.state['force_scale']>2:
                             self.state['force_scale']=1 
                     case pygame.K_LEFT:
-                        self.beads[self.probe_bead].set_bead_color('blue')
+                        old_probe_bead=self.probe_bead
                         self.probe_bead-=1
-                        if self.probe_bead<0:
-                            self.probe_bead=0
-                        self.beads[self.probe_bead].set_bead_color('red')
+                        self._swap_bead_type(old_probe_bead)
                     case pygame.K_RIGHT:
-                        self.beads[self.probe_bead].set_bead_color('blue')
+                        
+                        old_probe_bead=self.probe_bead
                         self.probe_bead+=1
-                        self.probe_bead=self.probe_bead%(self.N-1)
-                        self.beads[self.probe_bead].set_bead_color('red')
+                        self._swap_bead_type(old_probe_bead)
                     case pygame.K_y:
                         self.real_scale= not self.real_scale 
+    
+    def _swap_bead_type(self,old_probe_bead):
+        self.probe_bead=self.probe_bead%len(self.beads)
+        self.beads[old_probe_bead].r=self.beads[self.probe_bead].r
+        self.beads[old_probe_bead].border=self.beads[self.probe_bead].border
+        self.beads[old_probe_bead].set_bead_color(self.bead_colors[old_probe_bead%2])                      
+        self.beads[self.probe_bead].set_bead_color(self.config['graphs']['probe_bead_color'])
+        self.beads[self.probe_bead].r=int(self.config['graphs']['probe_bead_radius'])
+        self.beads[self.probe_bead].border=int(self.config['graphs']['probe_bead_border'])
     
     def _set_init_state(self):
         state={'frames':0,
@@ -260,9 +266,10 @@ class rubber_band:
         screen_size=(actual_size[0],round(actual_size[1]*self.v_fraction))  
         return screen_size
  
-    def _resize_beads(self):
+    def _resize_beads(self,inc):
         for bead in self.beads:
-            bead.r=self._beads_radius
+            radius=(bead.r+inc)%15
+            bead.r=radius
  
     def get_zeroth_freq(self):
         base_freq=self.get_wave_speed()/(2*self.length)
