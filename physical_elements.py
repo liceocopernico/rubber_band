@@ -597,6 +597,9 @@ class moving_observer:
         self.observer=self._av_observers[0]
         
         self._observer_image = pygame.image.load(f"images/{self.observer}")
+        self._observer_image_gray=self._observer_image.copy()
+        self._observer_image_gray=pygame.transform.grayscale(self._observer_image_gray)   
+        
         self.observer_size=self._observer_image.get_size()
         self.path_length=path_length
         self.max_disp=max_disp
@@ -651,6 +654,9 @@ class moving_observer:
         current_index=current_index%n_observers
         self.observer=self._av_observers[current_index]
         self._observer_image = pygame.image.load(f"images/{self.observer}")
+        self._observer_image_gray=self._observer_image.copy()
+        self._observer_image_gray=pygame.transform.grayscale(self._observer_image_gray)   
+        
         
     def set_observer_position_from_pixel(self,screen,mouse_pos):
         
@@ -677,8 +683,12 @@ class moving_observer:
         if self.place_observer or self.observer_placed:
             
             screen_size=self._get_simulation_size(screen) 
+            
             if self.spov:
                 screen_position=self._translate_pixel(self.initial_observer_pos,screen_size,self.path_length,self.max_disp)
+                if self.rubber_band.state['connected']:
+                    screen_position2=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
+                    screen.blit(self._observer_image_gray,screen_position2)
             else:
                 screen_position=self._translate_pixel(self.position,screen_size,self.path_length,self.max_disp)
             
