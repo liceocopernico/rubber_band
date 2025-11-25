@@ -139,7 +139,8 @@ class rubber_band:
                 'length':["Length",self.length,"m"],
                 'young_modulus':["Young modulus",self.y_mod,"Pa"],
                 'g_field':["Gravity field modulus",self.g,"m/s^2"],
-                'max_disp':["Max vertical displacement",self.max_disp,"m"]
+                'max_disp':["Max vertical displacement",self.max_disp,"m"],
+                'exiter':["Exciter frequency",self.state['exciter_freq'],"Hz"]
         }
         return data
       
@@ -224,6 +225,12 @@ class rubber_band:
                         self._swap_bead_type(old_probe_bead)
                     case pygame.K_y:
                         self.real_scale= not self.real_scale 
+                    case pygame.K_q:
+                        self.state['exciter']=not self.state['exciter']
+                    case pygame.K_UP:
+                        self.state['exciter_freq']+=0.1*self.state['first_harmonic']
+                    case pygame.K_DOWN:
+                        self.state['exciter_freq']-=0.1*self.state['first_harmonic']
     
     def _swap_bead_type(self,old_probe_bead):
         self.probe_bead=self.probe_bead%len(self.beads)
@@ -235,6 +242,8 @@ class rubber_band:
         self.beads[self.probe_bead].border=int(self.config['graphs']['probe_bead_border'])
     
     def _set_init_state(self):
+        
+        first_harmonic_freq=self.get_zeroth_freq()
         state={'frames':0,
                'forces':False,
                'freq_domain':False,
@@ -245,8 +254,10 @@ class rubber_band:
                'connected':False,
                'beads':True,
                'force_scale':0.25,
-               'max_freq':2*self.get_zeroth_freq(),
-               
+               'max_freq':2*first_harmonic_freq,
+               'exciter':False,
+               'first_harmonic':first_harmonic_freq,
+               'exciter_freq':0.1*first_harmonic_freq
                }
         return state
     
@@ -449,6 +460,9 @@ class rubber_band:
             return
         for i in range(self.N-1):
             self.beads[i].position+=self.beads[i].velocity*self.dt
+        if self.state['exciter']:
+            self.left.y=0.01*self.max_disp*math.sin(2*math.pi*self.state['exciter_freq']*self.state['time'])
+        
         self.time_series.enqueue(self.beads[self.probe_bead].position.y)
         self.state['time']+=self.dt
         self.state['frames']+=1
