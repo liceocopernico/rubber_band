@@ -82,8 +82,8 @@ uv run rubber_band.py
 * __y__ toggle real y scale
 * __v__ toggle moving observer point of view
 * __q__ toggle external exciter
-* __up_arrow__ increment external exiter frequency
-* __down_arrow__ decremnt external exiter frequency
+* __up_arrow__ increment external exciter frequency
+* __down_arrow__ decremnt external exciter frequency
 
 # Mouse interaction
 
