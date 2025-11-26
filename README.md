@@ -17,18 +17,6 @@ apt install pipx
 pipx install uv
 
 ```
-
-__windows and Mac OsX__
-
-```
-You are on your own :)
-
-```
-
-
-
-
-
 clone repository into a directory of your choice, I chose ~/tmp/projects
 
 ```
@@ -54,6 +42,31 @@ You are now ready to test this simple simulation
 uv run rubber_band.py
 
 ```
+
+__Windows__
+
+
+Make sure the latest version of python is installed (https://www.python.org/downloads/windows/)
+Open a terminal window and type
+```
+pip install pygame
+pip install configparser
+pip install matplotlib
+
+```
+Download the project zip file and unzip it into a directory of you choice. I used c:\Users\<username>\Documents\rubber_band
+Open a terminal and write:
+
+```
+cd c:\Users\<username>\Documents\rubber_band
+python rubber_band.py
+
+```
+
+__Mac OS X__
+
+You are on your own
+
 
 
 # Keyboard shortcuts
@@ -88,6 +101,7 @@ uv run rubber_band.py
 * __right_shift+left_arrow__ decrement max displayed time
 * __left_shift+right_arrow__ increment min displayed time
 * __right_shift+right_arrow__ increment max displayed time
+
 # Mouse interaction
 
 * __beads__ You can grab rubber band simulation beads and drag them around with your mouse, this's a simple way to draw an arbitrary impulse and show its propagation.
