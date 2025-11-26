@@ -24,6 +24,7 @@ screen_y=int(config['screen']['screeny'])
 fig = pylab.figure(figsize=[int(screen_x/int(config['graphs']['resolution'])),int(config['graphs']['height'])],dpi=int(config['graphs']['resolution']))
 graph_size=(screen_x,int(config['graphs']['height'])*int(config['graphs']['resolution']))
 
+
 fps=int(config['rubber_band']['fps'])
 
 
