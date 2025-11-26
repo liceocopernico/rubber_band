@@ -54,7 +54,7 @@ pip install configparser
 pip install matplotlib
 
 ```
-Download the project zip file and unzip it into a directory of your choice. I used c:\Users\<username>\Documents\rubber_band
+Download the project zip file and unzip it into a directory of your choice. I used ```c:\Users\ <username>\Documents\rubber_band```
 Open a terminal and write:
 
 ```
