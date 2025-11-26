@@ -84,7 +84,10 @@ uv run rubber_band.py
 * __q__ toggle external exciter
 * __up_arrow__ increment external exciter frequency
 * __down_arrow__ decremnt external exciter frequency
-
+* __left_shift+left_arrow__ decrement min displayed time
+* __right_shift+left_arrow__ decrement max displayed time
+* __left_shift+right_arrow__ increment min displayed time
+* __right_shift+right_arrow__ increment max displayed time
 # Mouse interaction
 
 * __beads__ You can grab rubber band simulation beads and drag them around with your mouse, this's a simple way to draw an arbitrary impulse and show its propagation.
@@ -104,15 +107,16 @@ All user configurable parameters are saved in config.ini.
 [environment]
 g=9.81
 
+
 [fft]
 window_size=32768
 
 [rubber_band]
-damping_factor=0.05
-beads_number=150
+damping_factor=0.09
+beads_number=200
 rest_stretch=0.1
 fps=250
-gamma=0.0001
+gamma=0.001
 y_mod=11000000000
 cross_section=0.0000032
 length=0.5
@@ -124,7 +128,12 @@ colors=black orange
 resolution=100
 height=5
 rendering_mode=RGBX
-beads_radius=6
+beads_radius=3
+probe_bead_color=red
+probe_bead_radius=8
+probe_bead_border=3
+bead_border=0
+
 
 [drawing]
 vertical_fraction=0.75
@@ -138,7 +147,7 @@ file=Lato_Heavy.ttf
 size=15
 
 [observer]
-picture=images/pink_dog.png
+picture=pink_dog.png,face_1.png,face_2.png,face_3.png,invader_green.png,invader_purple.png
 
 ```
 * __g__ Local gravitational field magnitude

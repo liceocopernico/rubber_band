@@ -215,14 +215,31 @@ class rubber_band:
                         if self.state['force_scale']>2:
                             self.state['force_scale']=1 
                     case pygame.K_LEFT:
-                        old_probe_bead=self.probe_bead
-                        self.probe_bead-=1
-                        self._swap_bead_type(old_probe_bead)
-                    case pygame.K_RIGHT:
+             
                         
-                        old_probe_bead=self.probe_bead
-                        self.probe_bead+=1
-                        self._swap_bead_type(old_probe_bead)
+                        
+                        if event.mod & pygame.KMOD_LSHIFT==0 and event.mod & pygame.KMOD_RSHIFT==0:
+                            old_probe_bead=self.probe_bead
+                            self.probe_bead-=1
+                            self._swap_bead_type(old_probe_bead)
+                            print('Move probe bead')
+                        elif event.mod & pygame.KMOD_LSHIFT:
+                           self.state['min_time']= max(self.state['min_time']-0.1*self.state['max_window_time'],0)
+                           print(f"Move left {self.state['min_time']}" )
+                        elif event.mod & pygame.KMOD_RSHIFT:
+                            self.state['max_time']= max(self.state['max_time']-0.1*self.state['max_window_time'],self.state['min_time'])
+                            print(f"Move left {self.state['max_time']}" )   
+                    case pygame.K_RIGHT:
+                         if event.mod & pygame.KMOD_LSHIFT==0 and event.mod & pygame.KMOD_RSHIFT==0:
+                            old_probe_bead=self.probe_bead
+                            self.probe_bead+=1
+                            self._swap_bead_type(old_probe_bead)
+                         elif event.mod & pygame.KMOD_LSHIFT:
+                             self.state['min_time']= min(self.state['min_time']+0.1*self.state['max_window_time'],self.state['max_time'])
+                             print(f"Move right {self.state['min_time']}" )
+                         elif event.mod & pygame.KMOD_RSHIFT:
+                             self.state['max_time']= min(self.state['max_time']+0.1*self.state['max_window_time'],self.state['max_window_time'])
+                             print(f"Move right {self.state['max_time']}" )
                     case pygame.K_y:
                         self.real_scale= not self.real_scale 
                     case pygame.K_q:
@@ -257,7 +274,10 @@ class rubber_band:
                'max_freq':2*first_harmonic_freq,
                'exciter':False,
                'first_harmonic':first_harmonic_freq,
-               'exciter_freq':0.1*first_harmonic_freq
+               'exciter_freq':0.1*first_harmonic_freq,
+               'max_window_time':float(self.config['fft']['window_size'])*self.dt,
+               'max_time':float(self.config['fft']['window_size'])*self.dt,
+               'min_time':0
                }
         return state
     
@@ -279,7 +299,7 @@ class rubber_band:
  
     def _resize_beads(self,inc):
         for bead in self.beads:
-            radius=(bead.r+inc)%15
+            radius=(bead.r+inc)%30
             bead.r=radius
  
     def get_zeroth_freq(self):
@@ -313,6 +333,7 @@ class rubber_band:
             t=n*self.dt
             axis=figure.gca()
             axis.plot(t,np_amplitudes)
+            matplotlib.pyplot.xlim(self.state['min_time'],self.state['max_time'])
             matplotlib.pyplot.ylabel('Amplitude (m)')
             matplotlib.pyplot.xlabel('Time (s)')
             canvas = agg.FigureCanvasAgg(figure)
